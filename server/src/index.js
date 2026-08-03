@@ -6,7 +6,10 @@ const { generateB2CMessage } = require("./b2c");
 const { generateB2BMessage, parseLeadsInput } = require("./b2b");
 
 const PORT = process.env.PORT || 8787;
-const WEBAPP_DIR = path.join(__dirname, "..", "..", "webapp");
+// server/webapp is a copy of the repo-root webapp/, kept in sync manually —
+// needed so this resolves correctly even when only `server/` is the deploy
+// build context (e.g. Railway with rootDirectory=server).
+const WEBAPP_DIR = path.join(__dirname, "..", "webapp");
 
 function sendJSON(res, status, body) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });

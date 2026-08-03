@@ -1,0 +1,630 @@
+<title>DuoAI — Assistente Operacional LabDuo</title>
+<style>
+  :root{
+    --teal:#128F87;
+    --teal-strong:#0C6B65;
+    --teal-soft:#E4F3F1;
+    --graphite:#495057;
+    --ink:#1B2124;
+    --bg:#F4F7F7;
+    --panel:#FFFFFF;
+    --border:#DDE6E5;
+    --muted:#67726F;
+    --amber:#B4791E;
+    --amber-bg:#FBF1E1;
+    --green:#2F8F5B;
+    --green-bg:#E8F5EE;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --display: -apple-system, "Segoe UI Semibold", "Helvetica Neue", Arial, sans-serif;
+  }
+  :root[data-theme="dark"]{
+    --teal:#3FCFC4;
+    --teal-strong:#7EE4DB;
+    --teal-soft:#123634;
+    --graphite:#B9C2C6;
+    --ink:#EDF2F2;
+    --bg:#12181B;
+    --panel:#1A2226;
+    --border:#2A3438;
+    --muted:#9AA6A9;
+    --amber:#E4B15C;
+    --amber-bg:#2E2416;
+    --green:#6BD39B;
+    --green-bg:#153226;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --teal:#3FCFC4;
+      --teal-strong:#7EE4DB;
+      --teal-soft:#123634;
+      --graphite:#B9C2C6;
+      --ink:#EDF2F2;
+      --bg:#12181B;
+      --panel:#1A2226;
+      --border:#2A3438;
+      --muted:#9AA6A9;
+      --amber:#E4B15C;
+      --amber-bg:#2E2416;
+      --green:#6BD39B;
+      --green-bg:#153226;
+    }
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:15px;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--teal-strong);}
+  .app{
+    display:grid;
+    grid-template-columns:250px 1fr;
+    min-height:100vh;
+  }
+  @media (max-width: 860px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{position:sticky;top:0;z-index:20;flex-direction:row;overflow-x:auto;padding:12px;gap:6px;}
+    .sidebar .brand{display:none;}
+    .navlist{flex-direction:row;gap:6px;}
+    .navlist button{white-space:nowrap;}
+  }
+
+  .sidebar{
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    padding:22px 16px;
+    gap:22px;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;padding:2px 6px 14px;border-bottom:1px solid var(--border);}
+  .brand-mark{display:flex;align-items:center;gap:10px;}
+  .dots{display:grid;grid-template-columns:repeat(3,7px);grid-template-rows:repeat(2,7px);gap:3px;flex:none;}
+  .dots span{border-radius:50%;display:block;}
+  .dots span:nth-child(1){background:var(--teal);}
+  .dots span:nth-child(2){background:var(--teal);opacity:.55;}
+  .dots span:nth-child(3){background:transparent;}
+  .dots span:nth-child(4){background:var(--teal);opacity:.75;}
+  .dots span:nth-child(5){background:var(--graphite);opacity:.5;}
+  .dots span:nth-child(6){background:var(--graphite);}
+  .brand-word{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+  .brand-word .duo{color:var(--teal);}
+  .brand-word .ai{color:var(--graphite);}
+  .brand-tag{font-size:11.5px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px;}
+
+  .navlist{display:flex;flex-direction:column;gap:4px;}
+  .navlist button{
+    all:unset;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 12px;
+    border-radius:8px;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+  }
+  .navlist button:hover{background:var(--teal-soft);color:var(--teal-strong);}
+  .navlist button.active{background:var(--teal-soft);color:var(--teal-strong);}
+  .navlist button .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6;flex:none;}
+
+  .sidebar-foot{margin-top:auto;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);padding-top:14px;}
+
+  main{padding:32px clamp(20px,4vw,48px) 64px;max-width:980px;}
+  .view{display:none;}
+  .view.active{display:block;}
+
+  header.pagehead{margin-bottom:26px;}
+  header.pagehead h1{font-family:var(--display);font-size:26px;margin:0 0 6px;letter-spacing:-0.01em;text-wrap:balance;}
+  header.pagehead p{margin:0;color:var(--muted);max-width:62ch;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:22px 24px;
+    margin-bottom:18px;
+  }
+  .card h2{font-family:var(--display);font-size:15.5px;margin:0 0 12px;letter-spacing:.01em;}
+  .card h3{font-size:13.5px;margin:18px 0 8px;color:var(--graphite);}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+    padding:3px 9px;border-radius:100px;
+  }
+  .pill.compliance{background:var(--amber-bg);color:var(--amber);}
+  .pill.ok{background:var(--green-bg);color:var(--green);}
+  .pill.teal{background:var(--teal-soft);color:var(--teal-strong);}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:700px){.grid2{grid-template-columns:1fr;}}
+
+  .stat{border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--bg);}
+  .stat .n{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:22px;font-weight:600;}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  .law-list{display:flex;flex-direction:column;gap:10px;padding:0;margin:0;list-style:none;}
+  .law-list li{display:flex;gap:10px;font-size:13.5px;}
+  .law-list b{color:var(--teal-strong);font-family:var(--mono);font-size:12px;flex:none;padding-top:2px;}
+
+  textarea, input[type=text]{
+    width:100%;
+    font-family:var(--sans);
+    font-size:13.5px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+    background:var(--bg);
+    color:var(--ink);
+    resize:vertical;
+  }
+  textarea:focus, input:focus, button:focus-visible, .navlist button:focus-visible, .uploadbtn:focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:1px;
+  }
+  label{font-size:12.5px;font-weight:600;color:var(--graphite);display:block;margin-bottom:6px;}
+  .field{margin-bottom:14px;}
+
+  .btn{
+    all:unset;
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--teal);
+    color:#fff;
+    font-weight:700;
+    font-size:13.5px;
+    padding:10px 16px;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .btn:hover{background:var(--teal-strong);}
+  .btn.secondary{background:transparent;color:var(--teal-strong);border:1px solid var(--teal);}
+  .btn.secondary:hover{background:var(--teal-soft);}
+
+  .uploadbtn{
+    border:1.5px dashed var(--border);
+    border-radius:12px;
+    padding:22px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    cursor:pointer;
+    background:var(--bg);
+  }
+  .uploadbtn:hover{border-color:var(--teal);color:var(--teal-strong);}
+  .uploadbtn input{display:none;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th{background:var(--bg);color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;}
+  tr:last-child td{border-bottom:none;}
+
+  .msg{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-top:10px;
+    font-family:var(--mono);
+    font-size:12.8px;
+    white-space:pre-wrap;
+    position:relative;
+  }
+  .msg .who{font-family:var(--sans);font-weight:700;font-size:12.5px;color:var(--teal-strong);display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .copybtn{
+    all:unset;font-family:var(--sans);font-size:11px;font-weight:700;color:var(--muted);cursor:pointer;
+    border:1px solid var(--border);padding:3px 8px;border-radius:6px;
+  }
+  .copybtn:hover{color:var(--teal-strong);border-color:var(--teal);}
+
+  .flagword{background:var(--amber-bg);color:var(--amber);padding:0 3px;border-radius:3px;font-weight:700;}
+
+  .empty{color:var(--muted);font-size:13px;padding:18px 0;}
+  code{font-family:var(--mono);background:var(--teal-soft);color:var(--teal-strong);padding:1px 6px;border-radius:5px;font-size:12.5px;}
+  pre{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;overflow-x:auto;white-space:pre-wrap;}
+  .arch-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+  .arch-item:last-child{border-bottom:none;}
+  .arch-item .from{color:var(--muted);text-decoration:line-through;font-size:12.5px;}
+  .arch-item .to{color:var(--teal-strong);font-weight:700;font-size:13px;}
+  .arch-item .why{color:var(--muted);font-size:12.5px;margin-top:2px;}
+</style>
+
+<div class="app">
+  <nav class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <div class="dots"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="brand-word"><span class="duo">Duo</span><span class="ai">AI</span></div>
+      </div>
+      <div class="brand-tag">LabDuo · Medicina Diagnóstica</div>
+    </div>
+    <div class="navlist" role="tablist">
+      <button class="active" data-view="visao"><span class="dot"></span>Visão geral</button>
+      <button data-view="b2c"><span class="dot"></span>B2C · Base Worklab</button>
+      <button data-view="b2b"><span class="dot"></span>B2B · Prospecção</button>
+      <button data-view="arq"><span class="dot"></span>Arquitetura open-source</button>
+    </div>
+    <div class="sidebar-foot">DuoAI v1 · sucessor operacional do Jarvis/Orion no ecossistema LabDuo.</div>
+  </nav>
+
+  <main>
+    <!-- VISÃO GERAL -->
+    <section class="view active" id="view-visao">
+      <header class="pagehead">
+        <h1>DuoAI — assistente operacional da LabDuo</h1>
+        <p>Duas frentes, uma missão: levar mais gente a fazer exames de prevenção (B2C) e colocar a LabDuo dentro de clínicas, academias e empresas como parceira de saúde ocupacional (B2B).</p>
+      </header>
+
+      <div class="card">
+        <h2>Missão</h2>
+        <p style="margin:0 0 10px">Você é o <b>DuoAI</b>, o assistente de inteligência artificial operacional exclusivo da LabDuo. Sua missão é gerenciar e executar as duas principais frentes estratégicas da empresa: a base B2C do Worklab com disparos humanizados, e a prospecção B2B de clínicas, saúde ocupacional e empresas.</p>
+        <span class="pill compliance">Regra de ouro · compliance de saúde</span>
+        <p style="margin-top:10px">Nunca usar a palavra <span class="flagword">colesterol</span> em abordagens B2C — o foco vai para cansaço, histórico e risco metabólico, sem alarmismo. Sigilo absoluto dos dados sensíveis, sempre em conformidade com a LGPD.</p>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Frente B2C</h2>
+          <p style="margin:0">Lê a base exportada do Worklab, cruza histórico de exames com sintomas atuais e escreve mensagens de WhatsApp focadas em prevenção e nos packs LabDuo.</p>
+        </div>
+        <div class="card">
+          <h2>Frente B2B</h2>
+          <p style="margin:0">Mapeia clínicas, medicina ocupacional, centros multidisciplinares, fisioterapia e academias via Google Maps, e conduz para reunião comercial com o link do WhatsApp da LabDuo.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Método aplicado (herdado da Orion Digital / V4 Company)</h2>
+        <p style="margin:0 0 12px;color:var(--muted)">DuoAI herda a disciplina comercial usada nas outras frentes da casa — a cadeia de crescimento do Método Orion e a régua de unit economics do Cientista do Marketing — adaptada à realidade de laboratório.</p>
+        <ul class="law-list">
+          <li><b>01</b> A marca vende antes do vendedor: o paciente sente cuidado antes de receber oferta.</li>
+          <li><b>02</b> Toda mensagem toca em cansaço, energia ou prevenção — nunca em medo direto do diagnóstico.</li>
+          <li><b>03</b> Multicanal: WhatsApp + indicação clínica + presença nas clínicas parceiras.</li>
+          <li><b>04</b> Dados &gt; achismo: cada campanha B2C/B2B mede taxa de resposta, agendamentos e CAC por canal.</li>
+          <li><b>05</b> IA com direção humana: o DuoAI acelera o volume de contato, a revisão de tom e fatos é sempre humana.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- B2C -->
+    <section class="view" id="view-b2c">
+      <header class="pagehead">
+        <h1>B2C · Upload da base Worklab</h1>
+        <p>Envie o CSV exportado do Worklab (colunas sugeridas: <code>nome</code>, <code>whatsapp</code>, <code>ultimo_exame</code>, <code>queixa</code>). O DuoAI cruza a queixa/histórico com o catálogo de packs e gera o rascunho da mensagem — sempre sem citar "colesterol" diretamente.</p>
+      </header>
+
+      <div class="card">
+        <h2>1 · Base de leads</h2>
+        <label class="uploadbtn" id="dropzone">
+          <input type="file" id="fileInput" accept=".csv,text/csv" />
+          <div id="dropzoneLabel">Clique para enviar o CSV do Worklab, ou use os dados de exemplo abaixo</div>
+        </label>
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn secondary" id="loadSample">Carregar exemplo</button>
+          <button class="btn" id="genMessages">Gerar mensagens</button>
+        </div>
+        <div class="tablewrap" style="margin-top:16px;">
+          <table id="leadsTable">
+            <thead><tr><th>Nome</th><th>WhatsApp</th><th>Último exame</th><th>Queixa / sintoma</th></tr></thead>
+            <tbody><tr><td colspan="4" class="empty">Nenhuma base carregada ainda.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2 · Rascunhos gerados <span class="pill ok" style="margin-left:6px;">compliance verificado</span></h2>
+        <div id="messagesOut"><p class="empty">Os rascunhos aparecem aqui depois de "Gerar mensagens".</p></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Catálogo de packs usado na recomendação</h3>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Pack</th><th>Indicado para</th><th>Pix</th></tr></thead>
+            <tbody id="packTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- B2B -->
+    <section class="view" id="view-b2b">
+      <header class="pagehead">
+        <h1>B2B · Prospecção de clínicas e empresas</h1>
+        <p>Cole a lista extraída do Google Maps (uma linha por lead: <code>Nome; Especialidade; WhatsApp; Email</code>). O DuoAI gera a abordagem comercial de parceria e o link direto do WhatsApp da LabDuo para agendar reunião.</p>
+      </header>
+
+      <div class="card">
+        <h2>1 · Leads do Google Maps</h2>
+        <div class="field">
+          <label for="b2bInput">Leads (um por linha)</label>
+          <textarea id="b2bInput" rows="6" placeholder="Clínica Vitalis; Medicina Ocupacional; 5511999990000; contato@vitalis.pt&#10;Espaço FisioAtiva; Fisioterapia; 5511988880000; ola@fisioativa.pt"></textarea>
+        </div>
+        <div class="field">
+          <label for="waNumber">Link do WhatsApp comercial LabDuo (ajuste para o número real)</label>
+          <input type="text" id="waNumber" value="https://wa.me/5500000000000" />
+        </div>
+        <button class="btn" id="genB2B">Gerar abordagens</button>
+        <button class="btn secondary" id="loadSampleB2B">Carregar exemplo</button>
+      </div>
+
+      <div class="card">
+        <h2>2 · Mensagens de prospecção</h2>
+        <div id="b2bOut"><p class="empty">As abordagens aparecem aqui depois de "Gerar abordagens".</p></div>
+      </div>
+    </section>
+
+    <!-- ARQUITETURA -->
+    <section class="view" id="view-arq">
+      <header class="pagehead">
+        <h1>Arquitetura — 100% open-source</h1>
+        <p>Substituição de fornecedores pagos (Twilio, APIs proprietárias) por stack open-source, mantendo as mesmas funcionalidades operacionais do Jarvis original.</p>
+      </header>
+
+      <div class="card">
+        <h2>Trocas de fornecedor</h2>
+        <div class="arch-item">
+          <div style="flex:1">
+            <div class="from">Twilio (WhatsApp/SMS pago)</div>
+            <div class="to">Evolution API / Baileys (gateway WhatsApp open-source, self-hosted)</div>
+            <div class="why">Mesma função — disparo e recebimento de WhatsApp — sem custo por mensagem.</div>
+          </div>
+        </div>
+        <div class="arch-item">
+          <div style="flex:1">
+            <div class="from">Chamadas diretas a APIs de LLM proprietárias</div>
+            <div class="to">OmniRoute — <a href="https://github.com/diegosouzapw/OmniRoute" target="_blank" rel="noopener">github.com/diegosouzapw/OmniRoute</a></div>
+            <div class="why">Gateway único de LLM: roteia entre provedores, evita integração direta e lock-in por serviço.</div>
+          </div>
+        </div>
+        <div class="arch-item">
+          <div style="flex:1">
+            <div class="from">Orquestração de agente monolítica</div>
+            <div class="to">Hermes-Agent — <a href="https://github.com/NousResearch/hermes-agent.git" target="_blank" rel="noopener">github.com/NousResearch/hermes-agent</a></div>
+            <div class="why">Framework de agentes open-source (NousResearch/Hermes) para orquestrar as sub-tarefas B2C e B2B como agentes especializados.</div>
+          </div>
+        </div>
+        <div class="arch-item">
+          <div style="flex:1">
+            <div class="from">Serviços de e-mail/SMS pagos</div>
+            <div class="to">SMTP self-hosted (Postal/Mailu) para e-mail comercial B2B</div>
+            <div class="why">Fecha o canal de e-mail da prospecção sem depender de Resend/SendGrid.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Camadas do sistema</h2>
+        <pre>Entrada
+ ├─ Upload Worklab (CSV/planilha) ──▶ Agente B2C (Hermes-Agent)
+ └─ Coleta Google Maps (leads)   ──▶ Agente B2B (Hermes-Agent)
+        │
+        ▼
+   OmniRoute (gateway único de LLM)
+        │
+        ▼
+   Geração de mensagem + checagem de compliance
+   (bloqueia "colesterol" e termos sensíveis em B2C · LGPD)
+        │
+        ▼
+   Evolution API / Baileys (WhatsApp) · SMTP self-hosted (e-mail B2B)</pre>
+      </div>
+
+      <div class="card">
+        <h2>Status desta base</h2>
+        <div class="grid2">
+          <div class="stat"><div class="n">2</div><div class="l">repositórios open-source de referência integrados ao plano</div></div>
+          <div class="stat"><div class="n">9</div><div class="l">packs LabDuo carregados no motor de recomendação B2C</div></div>
+        </div>
+        <p style="margin-top:14px;color:var(--muted);font-size:13px;">A implementação de backend (troca real do Twilio, deploy do Hermes-Agent e do OmniRoute) roda no projeto Replit "Jarvis Claude Assistant" — este webapp é a camada operacional de front-end e o demo funcional das duas frentes.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  var PACKS = [
+    {nome:"LabDuo Essencial", pix:149, tags:["geral","cansaço","checkup"], chamada:"Um check-up completo de entrada, no seu tempo."},
+    {nome:"LabDuo Mulher", pix:249, tags:["mulher","hormonal","cansaço","tireoide"], chamada:"Um cuidado completo para todas as fases da mulher."},
+    {nome:"LabDuo Homem", pix:179, tags:["homem","checkup"], chamada:"Cuidado completo, no seu ritmo."},
+    {nome:"LabDuo CardioMetabólico", pix:249, tags:["cansaço","risco metabólico","peso","energia"], chamada:"Vá além do básico e conheça seu risco cardiometabólico."},
+    {nome:"LabDuo Performance e Vitalidade", pix:259, tags:["energia","treino","vitamina","fadiga"], chamada:"Acompanhe seus indicadores para treinar, recuperar e evoluir melhor."},
+    {nome:"LabDuo Mounjaro – Acompanhamento Metabólico", pix:329, tags:["mounjaro","glp-1","emagrecimento","metabólico"], chamada:"Acompanhamento completo para quem está em tratamento metabólico."},
+    {nome:"LabDuo Infantil", pix:179, tags:["criança","infantil","crescimento"], chamada:"Crescer com saúde começa com cuidado e prevenção."},
+    {nome:"LabDuo Atleta", pix:259, tags:["atleta","academia","treino","energia"], chamada:"Performance de verdade começa com dados de verdade."},
+    {nome:"LabDuo Melhor Idade 60+", pix:299, tags:["idoso","60+","cansaço","crônico"], chamada:"Mais cuidado, autonomia e qualidade de vida em todas as fases."}
+  ];
+
+  var packTable = document.getElementById("packTable");
+  PACKS.forEach(function(p){
+    var tr = document.createElement("tr");
+    tr.innerHTML = "<td>"+p.nome+"</td><td>"+p.tags.slice(0,3).join(", ")+"</td><td>R$ "+p.pix.toFixed(2).replace(".",",")+"</td>";
+    packTable.appendChild(tr);
+  });
+
+  // ---- nav ----
+  var buttons = document.querySelectorAll(".navlist button");
+  buttons.forEach(function(btn){
+    btn.addEventListener("click", function(){
+      buttons.forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+      document.getElementById("view-"+btn.dataset.view).classList.add("active");
+    });
+  });
+
+  // ---- B2C ----
+  var SAMPLE_CSV = "nome,whatsapp,ultimo_exame,queixa\n"+
+    "Marta Silveira,5511987654321,2025-02-10,\"cansaço constante e sono ruim\"\n"+
+    "João Peixoto,5511976543210,2024-11-03,\"quer engordar massa e recupera mal do treino\"\n"+
+    "Camila Rocha,5511965432109,2025-05-20,\"em tratamento com Mounjaro, quer acompanhar exames\"\n"+
+    "Sr. Antunes,5511954321098,2023-08-15,\"68 anos, pressão alta e cansaço nas pernas\"\n"+
+    "Beatriz Nunes,5511943210987,2025-01-30,\"ciclo irregular e queda de cabelo\"";
+
+  var leads = [];
+
+  function parseCSV(text){
+    var lines = text.trim().split(/\r?\n/);
+    var headers = lines[0].split(",");
+    return lines.slice(1).filter(Boolean).map(function(line){
+      var cells = line.match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+      var row = {};
+      headers.forEach(function(h, i){
+        row[h.trim()] = (cells[i]||"").replace(/^"|"$/g,"").trim();
+      });
+      return row;
+    });
+  }
+
+  function renderLeadsTable(){
+    var tbody = document.querySelector("#leadsTable tbody");
+    tbody.innerHTML = "";
+    if(!leads.length){
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">Nenhuma base carregada ainda.</td></tr>';
+      return;
+    }
+    leads.forEach(function(l){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+esc(l.nome)+"</td><td>"+esc(l.whatsapp)+"</td><td>"+esc(l.ultimo_exame)+"</td><td>"+esc(l.queixa)+"</td>";
+      tbody.appendChild(tr);
+    });
+  }
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]; });
+  }
+
+  document.getElementById("loadSample").addEventListener("click", function(){
+    leads = parseCSV(SAMPLE_CSV);
+    renderLeadsTable();
+  });
+
+  document.getElementById("fileInput").addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    document.getElementById("dropzoneLabel").textContent = file.name;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      leads = parseCSV(ev.target.result);
+      renderLeadsTable();
+    };
+    reader.readAsText(file);
+  });
+
+  var BLOCKED_WORDS = ["colesterol"];
+
+  function pickPack(queixa){
+    var q = (queixa||"").toLowerCase();
+    var best = null, bestScore = -1;
+    PACKS.forEach(function(p){
+      var score = p.tags.reduce(function(acc, tag){ return acc + (q.indexOf(tag)>=0 ? 1 : 0); }, 0);
+      if(score > bestScore){ bestScore = score; best = p; }
+    });
+    return best || PACKS[0];
+  }
+
+  function complianceRewrite(text){
+    var flagged = false;
+    BLOCKED_WORDS.forEach(function(w){
+      var re = new RegExp(w, "gi");
+      if(re.test(text)){ flagged = true; }
+    });
+    return {text: text, flagged: flagged};
+  }
+
+  function firstName(full){
+    return (full||"").trim().split(" ")[0] || "";
+  }
+
+  function buildB2CMessage(lead){
+    var pack = pickPack(lead.queixa);
+    var nome = firstName(lead.nome);
+    var msg = "Oi, "+nome+"! Aqui é da LabDuo 💙\n\n"+
+      "Vimos que faz um tempo desde o seu último exame ("+ (lead.ultimo_exame||"há um bom tempo") +") e, pelo que você comentou — \""+lead.queixa+"\" — vale a pena dar uma olhada em como estão seus indicadores de energia e bem-estar antes que isso vire rotina.\n\n"+
+      "Preparamos o "+pack.nome+" pensando exatamente nesse momento: "+pack.chamada+"\n"+
+      "Valor no Pix: R$ "+pack.pix.toFixed(2).replace(".",",")+".\n\n"+
+      "Quer que eu já separe um horário pra você? Responde aqui que eu cuido de tudo. 😊";
+    return complianceRewrite(msg);
+  }
+
+  document.getElementById("genMessages").addEventListener("click", function(){
+    var out = document.getElementById("messagesOut");
+    if(!leads.length){
+      out.innerHTML = '<p class="empty">Carregue uma base antes de gerar as mensagens.</p>';
+      return;
+    }
+    out.innerHTML = "";
+    leads.forEach(function(lead){
+      var r = buildB2CMessage(lead);
+      var div = document.createElement("div");
+      div.className = "msg";
+      div.innerHTML = '<div class="who"><span>'+esc(lead.nome)+' · '+esc(lead.whatsapp)+'</span>'+
+        (r.flagged ? '<span class="pill compliance">termo bloqueado detetado</span>' : '<span class="pill ok">compliance ok</span>')+
+        '</div>'+esc(r.text)+'<div style="margin-top:8px;"><button class="copybtn" data-copy="'+encodeURIComponent(r.text)+'">Copiar</button></div>';
+      out.appendChild(div);
+    });
+    bindCopyButtons();
+  });
+
+  function bindCopyButtons(){
+    document.querySelectorAll(".copybtn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var text = decodeURIComponent(btn.dataset.copy);
+        navigator.clipboard && navigator.clipboard.writeText(text);
+        var original = btn.textContent;
+        btn.textContent = "Copiado!";
+        setTimeout(function(){ btn.textContent = original; }, 1400);
+      });
+    });
+  }
+
+  // ---- B2B ----
+  var SAMPLE_B2B = "Clínica Vitalis; Medicina Ocupacional; 5511999990000; contato@vitalis.pt\n"+
+    "Espaço FisioAtiva; Fisioterapia; 5511988880000; ola@fisioativa.pt\n"+
+    "Academia PowerCore; Academia; 5511977770000; contato@powercore.pt";
+
+  document.getElementById("loadSampleB2B").addEventListener("click", function(){
+    document.getElementById("b2bInput").value = SAMPLE_B2B;
+  });
+
+  function buildB2BMessage(nome, especialidade, waLink){
+    return "Olá, equipe "+nome+"! Aqui é da LabDuo — medicina diagnóstica.\n\n"+
+      "Notamos o trabalho de vocês em "+especialidade+" e queremos conversar sobre uma parceria: apoio em exames complementares e saúde ocupacional para os pacientes/clientes de vocês, com agendamento facilitado e condições especiais para indicação.\n\n"+
+      "Consegue 15 minutos essa semana para uma reunião rápida? Pode falar direto com a nossa equipe comercial por aqui: "+waLink;
+  }
+
+  document.getElementById("genB2B").addEventListener("click", function(){
+    var raw = document.getElementById("b2bInput").value.trim();
+    var waLink = document.getElementById("waNumber").value.trim() || "https://wa.me/5500000000000";
+    var out = document.getElementById("b2bOut");
+    if(!raw){
+      out.innerHTML = '<p class="empty">Cole ao menos um lead antes de gerar as abordagens.</p>';
+      return;
+    }
+    out.innerHTML = "";
+    raw.split(/\r?\n/).filter(Boolean).forEach(function(line){
+      var parts = line.split(";").map(function(s){ return s.trim(); });
+      var nome = parts[0] || "";
+      var especialidade = parts[1] || "saúde";
+      var whatsapp = parts[2] || "";
+      var email = parts[3] || "";
+      var msg = buildB2BMessage(nome, especialidade, waLink);
+      var div = document.createElement("div");
+      div.className = "msg";
+      div.innerHTML = '<div class="who"><span>'+esc(nome)+' · '+esc(especialidade)+(whatsapp? " · "+esc(whatsapp):"")+(email? " · "+esc(email):"")+'</span>'+
+        '<span class="pill teal">B2B</span></div>'+esc(msg)+
+        '<div style="margin-top:8px;"><button class="copybtn" data-copy="'+encodeURIComponent(msg)+'">Copiar</button></div>';
+      out.appendChild(div);
+    });
+    bindCopyButtons();
+  });
+})();
+</script>
