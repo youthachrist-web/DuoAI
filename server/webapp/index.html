@@ -186,6 +186,7 @@
   .btn:hover{background:var(--teal-strong);}
   .btn.secondary{background:transparent;color:var(--teal-strong);border:1px solid var(--teal);}
   .btn.secondary:hover{background:var(--teal-soft);}
+  .btn.secondary.active{background:var(--teal);color:#fff;border-color:var(--teal);}
 
   .uploadbtn{
     border:1.5px dashed var(--border);
@@ -297,11 +298,27 @@
     <section class="view" id="view-b2c">
       <header class="pagehead">
         <h1>B2C · Upload da base Worklab</h1>
-        <p>Envie o CSV exportado do Worklab (colunas sugeridas: <code>nome</code>, <code>whatsapp</code>, <code>ultimo_exame</code>, <code>queixa</code>). O DuoAI cruza a queixa/histórico com o catálogo de packs e gera o rascunho da mensagem — sempre sem citar "colesterol" diretamente.</p>
+        <p>Envie o CSV exportado do Worklab. Colunas reconhecidas: <code>nome</code>, <code>telefone/whatsapp</code>, <code>último exame</code>, <code>queixa</code>, <code>alerta</code>, <code>data da consulta</code>, <code>hora</code>, <code>unidade</code>, <code>link do resultado</code>. Aceita ponto-e-vírgula (padrão do Excel pt-BR) ou vírgula. O DuoAI cruza a queixa/histórico com o catálogo de packs e gera o rascunho — sempre sem citar "colesterol" diretamente. O ficheiro é lido em memória e não é guardado (LGPD).</p>
       </header>
 
       <div class="card">
-        <h2>1 · Base de leads</h2>
+        <h2>1 · Que mensagem escrever</h2>
+        <div id="kindPicker" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn secondary kindbtn active" data-kind="reativacao">1 · Reativação da base</button>
+          <button class="btn secondary kindbtn" data-kind="confirmacao">2 · Confirmação de agendamento</button>
+          <button class="btn secondary kindbtn" data-kind="resultado">3 · Resultado disponível</button>
+        </div>
+        <p class="empty" id="kindHint" style="margin:10px 0 0;">Traz de volta quem não faz exame há tempo: recomenda o pack e o valor no Pix. Quando a linha está marcada como alerta, encaminha para o especialista sem nomear nenhum exame.</p>
+        <div style="margin-top:14px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+          <label>Link de agendamento LabDuo<input type="text" id="labLink" placeholder="https://labduo.com.br/agendar" /></label>
+          <label>Link do especialista (Zapvida)<input type="text" id="specialistLink" placeholder="https://zapvida..." /></label>
+          <label id="wrapResultLink" style="display:none;">Link do resultado (portal do paciente)<input type="text" id="resultLink" placeholder="https://labduo.com.br/resultado" /></label>
+          <label id="wrapRescheduleLink" style="display:none;">Link de reagendamento<input type="text" id="rescheduleLink" placeholder="https://labduo.com.br/reagendar" /></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2 · Base de leads</h2>
         <label class="uploadbtn" id="dropzone">
           <input type="file" id="fileInput" accept=".csv,text/csv" />
           <div id="dropzoneLabel">Clique para enviar o CSV do Worklab, ou use os dados de exemplo abaixo</div>
@@ -319,7 +336,8 @@
       </div>
 
       <div class="card">
-        <h2>2 · Rascunhos gerados <span class="pill ok" style="margin-left:6px;">compliance verificado</span></h2>
+        <h2>3 · Rascunhos gerados <span class="pill ok" style="margin-left:6px;">compliance verificado</span></h2>
+        <p class="empty" style="margin:0 0 12px;">Cada mensagem abre no seu WhatsApp já preenchida. Você confirma o envio — nada é enviado automaticamente.</p>
         <div id="messagesOut"><p class="empty">Os rascunhos aparecem aqui depois de "Gerar mensagens".</p></div>
       </div>
 
@@ -470,6 +488,27 @@
     "Beatriz Nunes,5511943210987,2025-01-30,\"ciclo irregular e queda de cabelo\"";
 
   var leads = [];
+  // O CSV cru fica guardado porque é o servidor que faz o parse "a sério"
+  // (separador, BOM, cabeçalhos flexíveis) — a tabela de pré-visualização abaixo
+  // é só para o operador confirmar que carregou o ficheiro certo.
+  var rawCsv = "";
+  var kind = "reativacao";
+
+  var KIND_HINTS = {
+    reativacao: "Traz de volta quem não faz exame há tempo: recomenda o pack e o valor no Pix. Quando a linha está marcada como alerta, encaminha para o especialista sem nomear nenhum exame.",
+    confirmacao: "Confirma um agendamento. Precisa das colunas 'data da consulta' e 'hora' — sem data, a linha é recusada em vez de sair com o horário em branco. Mensagem transacional: sem pack e sem preço.",
+    resultado: "Avisa que o resultado saiu. Precisa do link do portal do paciente (ou de uma coluna 'link do resultado'). Se a linha está marcada como alerta, encaminha para um profissional sem dizer o que foi encontrado."
+  };
+
+  document.querySelectorAll(".kindbtn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      kind = btn.dataset.kind;
+      document.querySelectorAll(".kindbtn").forEach(function(b){ b.classList.toggle("active", b === btn); });
+      document.getElementById("kindHint").textContent = KIND_HINTS[kind];
+      document.getElementById("wrapResultLink").style.display = kind === "resultado" ? "" : "none";
+      document.getElementById("wrapRescheduleLink").style.display = kind === "confirmacao" ? "" : "none";
+    });
+  });
 
   function parseCSV(text){
     var lines = text.trim().split(/\r?\n/);
@@ -503,6 +542,7 @@
   }
 
   document.getElementById("loadSample").addEventListener("click", function(){
+    rawCsv = SAMPLE_CSV;
     leads = parseCSV(SAMPLE_CSV);
     renderLeadsTable();
   });
@@ -513,7 +553,8 @@
     document.getElementById("dropzoneLabel").textContent = file.name;
     var reader = new FileReader();
     reader.onload = function(ev){
-      leads = parseCSV(ev.target.result);
+      rawCsv = ev.target.result;
+      leads = parseCSV(rawCsv);
       renderLeadsTable();
     };
     reader.readAsText(file);
@@ -555,13 +596,46 @@
     return complianceRewrite(msg);
   }
 
-  document.getElementById("genMessages").addEventListener("click", function(){
+  function val(id){
+    var el = document.getElementById(id);
+    return el && el.value.trim() ? el.value.trim() : undefined;
+  }
+
+  /** Render dos rascunhos que o servidor devolveu (as três trilhas + link wa.me). */
+  function renderServerMessages(data){
     var out = document.getElementById("messagesOut");
-    if(!leads.length){
-      out.innerHTML = '<p class="empty">Carregue uma base antes de gerar as mensagens.</p>';
-      return;
-    }
-    out.innerHTML = "";
+    out.innerHTML = '<p class="empty">'+data.count+' pacientes · '+data.sendable+
+      ' prontos para disparo · '+data.blocked+' bloqueados.</p>';
+    data.messages.forEach(function(m){
+      var div = document.createElement("div");
+      div.className = "msg";
+      var badges = '<span class="pill '+(m.track === "alerta" ? "compliance" : "ok")+'">'+
+        (m.kind === "confirmacao" ? "confirmação" : m.track)+'</span>';
+      if(m.kind === "reativacao" && m.track === "rotina"){
+        badges += '<span class="pill">'+esc(m.pack)+' · R$ '+m.packPrice.toFixed(2).replace(".",",")+'</span>';
+      }
+      var head = '<div class="who"><span>'+esc(m.lead)+' · '+esc(m.whatsapp || "sem telefone")+'</span>'+badges+'</div>';
+      if(m.blocked){
+        div.innerHTML = head + '<p class="empty" style="margin:0;">🚫 '+esc(m.blocked)+'</p>';
+      } else {
+        var actions = '<button class="copybtn" data-copy="'+encodeURIComponent(m.text)+'">Copiar</button>';
+        if(m.whatsappUrl){
+          actions += ' <a class="btn" style="margin-left:8px;" target="_blank" rel="noopener noreferrer" href="'+
+            esc(m.whatsappUrl)+'">Abrir no WhatsApp</a>';
+        }
+        div.innerHTML = head + esc(m.text) + '<div style="margin-top:8px;">'+actions+'</div>';
+      }
+      out.appendChild(div);
+    });
+    bindCopyButtons();
+  }
+
+  /** Fallback offline: esta página também é publicada como artifact estático, sem
+   *  servidor por trás. Aí só a reativação de rotina existe, e é dito na cara. */
+  function renderLocalMessages(reason){
+    var out = document.getElementById("messagesOut");
+    out.innerHTML = '<p class="empty">⚠️ Servidor DuoAI indisponível ('+esc(reason)+
+      '). Modo offline: só a reativação de rotina, sem validação de telefone e sem link de disparo.</p>';
     leads.forEach(function(lead){
       var r = buildB2CMessage(lead);
       var div = document.createElement("div");
@@ -572,6 +646,32 @@
       out.appendChild(div);
     });
     bindCopyButtons();
+  }
+
+  document.getElementById("genMessages").addEventListener("click", function(){
+    var out = document.getElementById("messagesOut");
+    if(!rawCsv){
+      out.innerHTML = '<p class="empty">Carregue uma base antes de gerar as mensagens.</p>';
+      return;
+    }
+    out.innerHTML = '<p class="empty">A gerar rascunhos...</p>';
+    fetch("/api/b2c/generate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        csv: rawCsv,
+        kind: kind,
+        labLink: val("labLink"),
+        specialistLink: val("specialistLink"),
+        resultLink: val("resultLink"),
+        rescheduleLink: val("rescheduleLink")
+      })
+    }).then(function(res){
+      if(!res.ok) throw new Error("HTTP "+res.status);
+      return res.json();
+    }).then(renderServerMessages).catch(function(err){
+      renderLocalMessages(err.message);
+    });
   });
 
   function bindCopyButtons(){

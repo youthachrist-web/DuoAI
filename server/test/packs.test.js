@@ -23,3 +23,11 @@ test("falls back to the entry pack when nothing matches", () => {
   const pack = pickPack("");
   assert.equal(pack.id, PACKS[0].id);
 });
+
+test("an explicit age outranks the tags", () => {
+  // "68 anos, várias medicações" matches no tag at all and used to land on the
+  // entry pack, which is the wrong recommendation for that patient.
+  assert.equal(pickPack("68 anos, várias medicações").id, "melhor-idade");
+  assert.equal(pickPack("meu filho de 8 anos").id, "infantil");
+  assert.equal(pickPack("72 anos, muito cansaço").id, "melhor-idade");
+});

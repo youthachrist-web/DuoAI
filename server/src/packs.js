@@ -127,6 +127,16 @@ const PACKS = [
  */
 function pickPack(queixa = "") {
   const q = queixa.toLowerCase();
+
+  // Uma idade explícita vence qualquer tag: "68 anos, várias medicações" não bate
+  // nenhuma tag do catálogo e caía no pack de entrada, que é a recomendação errada.
+  const ageMatch = q.match(/(\d{1,3})\s*anos/);
+  if (ageMatch) {
+    const age = Number(ageMatch[1]);
+    if (age >= 60) return PACKS.find((p) => p.id === "melhor-idade") || PACKS[0];
+    if (age <= 17) return PACKS.find((p) => p.id === "infantil") || PACKS[0];
+  }
+
   let best = PACKS[0];
   let bestScore = -1;
   for (const pack of PACKS) {

@@ -30,8 +30,24 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && req.url === "/api/b2c/generate") {
       const body = JSON.parse((await readBody(req)) || "{}");
       const leads = parseWorklabCSV(body.csv || "");
-      const messages = await Promise.all(leads.map(generateB2CMessage));
-      return sendJSON(res, 200, { count: messages.length, messages });
+      // Nada do CSV é gravado: os rascunhos voltam na resposta e o operador
+      // dispara do próprio WhatsApp pelos links wa.me (LGPD + termos do WhatsApp).
+      const options = {
+        kind: body.kind,
+        labLink: body.labLink,
+        specialistLink: body.specialistLink,
+        resultLink: body.resultLink,
+        rescheduleLink: body.rescheduleLink,
+      };
+      const messages = await Promise.all(leads.map((lead) => generateB2CMessage(lead, options)));
+      const sendable = messages.filter((m) => m.whatsappUrl).length;
+      return sendJSON(res, 200, {
+        count: messages.length,
+        kind: messages[0] ? messages[0].kind : "reativacao",
+        sendable,
+        blocked: messages.length - sendable,
+        messages,
+      });
     }
 
     if (req.method === "POST" && req.url === "/api/b2b/generate") {

@@ -7,6 +7,28 @@ const BLOCKED_TERMS = [
     pattern: /colesterol/gi,
     replacement: "seus indicadores de energia e risco metabólico",
   },
+  {
+    pattern: /triglicer[íi]deos?/gi,
+    replacement: "seus indicadores metabólicos",
+  },
+  {
+    pattern: /diabetes|diabético|diabética/gi,
+    replacement: "seu controle de energia e metabolismo",
+  },
+  // Estes três não têm reescrita comercial possível: se aparecerem, a mensagem
+  // não é para sair por WhatsApp, é para um profissional conduzir.
+  {
+    pattern: /c[âa]ncer|tumor/gi,
+    replacement: "um ponto que merece uma conversa com o médico",
+  },
+  {
+    pattern: /HIV/g,
+    replacement: "um ponto que merece uma conversa com o médico",
+  },
+  {
+    pattern: /hepatite/gi,
+    replacement: "um ponto que merece uma conversa com o médico",
+  },
 ];
 
 /**
