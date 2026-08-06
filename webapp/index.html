@@ -1,4 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>DuoAI — Assistente Operacional LabDuo</title>
+<meta name="description" content="DuoAI — assistente operacional da LabDuo: base B2C do Worklab e prospecção B2B em saúde ocupacional.">
+<meta name="theme-color" content="#128F87">
+<meta name="apple-mobile-web-app-title" content="DuoAI">
+<meta name="application-name" content="DuoAI">
+<!-- Inline so the page keeps working when it is opened straight from disk or
+     published as a standalone artifact, with no server to fetch assets from. -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20width%3D%2264%22%20height%3D%2264%22%20role%3D%22img%22%20aria-label%3D%22DuoAI%22%3E%20%3Ctitle%3EDuoAI%3C%2Ftitle%3E%20%3Cdefs%3E%20%3ClinearGradient%20id%3D%22fd%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2300B4CE%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230B54C8%22%2F%3E%20%3C%2FlinearGradient%3E%20%3ClinearGradient%20id%3D%22fw%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%238FC4EC%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%239AA2E1%22%2F%3E%20%3C%2FlinearGradient%3E%20%3CclipPath%20id%3D%22fr%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2232%22%2F%3E%3C%2FclipPath%3E%20%3C%2Fdefs%3E%20%3Cg%20clip-path%3D%22url%28%23fr%29%22%3E%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23F8F8FC%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fw%29%22%20opacity%3D%220.9%22%20d%3D%22M-4%2052%20C%2010%2046%2C%2022%2058%2C%2034%2054%20C%2046%2050%2C%2056%2044%2C%2068%2050%20V%2068%20H%20-4%20Z%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2224%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2240%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2220%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2232%22%20r%3D%224%22%20fill%3D%22%2300A9C7%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2244%22%20r%3D%224%22%20fill%3D%22%230B62CE%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fd%29%22%20fill-rule%3D%22evenodd%22%20d%3D%22M36%2016%20h6%20a16%2016%200%200%201%200%2032%20h-6%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20v-4%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20Z%20M42%2024%20v16%20a8%208%200%200%200%200%20-16%20Z%22%2F%3E%20%3C%2Fg%3E%20%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20width%3D%2264%22%20height%3D%2264%22%20role%3D%22img%22%20aria-label%3D%22DuoAI%22%3E%20%3Ctitle%3EDuoAI%3C%2Ftitle%3E%20%3Cdefs%3E%20%3ClinearGradient%20id%3D%22fd%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2300B4CE%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230B54C8%22%2F%3E%20%3C%2FlinearGradient%3E%20%3ClinearGradient%20id%3D%22fw%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%238FC4EC%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%239AA2E1%22%2F%3E%20%3C%2FlinearGradient%3E%20%3CclipPath%20id%3D%22fr%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2232%22%2F%3E%3C%2FclipPath%3E%20%3C%2Fdefs%3E%20%3Cg%20clip-path%3D%22url%28%23fr%29%22%3E%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23F8F8FC%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fw%29%22%20opacity%3D%220.9%22%20d%3D%22M-4%2052%20C%2010%2046%2C%2022%2058%2C%2034%2054%20C%2046%2050%2C%2056%2044%2C%2068%2050%20V%2068%20H%20-4%20Z%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2224%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2240%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2220%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2232%22%20r%3D%224%22%20fill%3D%22%2300A9C7%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2244%22%20r%3D%224%22%20fill%3D%22%230B62CE%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fd%29%22%20fill-rule%3D%22evenodd%22%20d%3D%22M36%2016%20h6%20a16%2016%200%200%201%200%2032%20h-6%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20v-4%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20Z%20M42%2024%20v16%20a8%208%200%200%200%200%20-16%20Z%22%2F%3E%20%3C%2Fg%3E%20%3C%2Fsvg%3E">
+</head>
+<body>
 <style>
   :root{
     --teal:#128F87;
@@ -84,6 +99,7 @@
   }
   .brand{display:flex;flex-direction:column;gap:2px;padding:2px 6px 14px;border-bottom:1px solid var(--border);}
   .brand-mark{display:flex;align-items:center;gap:10px;}
+  .brand-icon{border-radius:9px;flex:none;display:block;}
   .dots{display:grid;grid-template-columns:repeat(3,7px);grid-template-rows:repeat(2,7px);gap:3px;flex:none;}
   .dots span{border-radius:50%;display:block;}
   .dots span:nth-child(1){background:var(--teal);}
@@ -241,7 +257,7 @@
   <nav class="sidebar">
     <div class="brand">
       <div class="brand-mark">
-        <div class="dots"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+        <img class="brand-icon" src="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20width%3D%2264%22%20height%3D%2264%22%20role%3D%22img%22%20aria-label%3D%22DuoAI%22%3E%20%3Ctitle%3EDuoAI%3C%2Ftitle%3E%20%3Cdefs%3E%20%3ClinearGradient%20id%3D%22fd%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2300B4CE%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230B54C8%22%2F%3E%20%3C%2FlinearGradient%3E%20%3ClinearGradient%20id%3D%22fw%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%220%22%3E%20%3Cstop%20offset%3D%220%22%20stop-color%3D%22%238FC4EC%22%2F%3E%20%3Cstop%20offset%3D%221%22%20stop-color%3D%22%239AA2E1%22%2F%3E%20%3C%2FlinearGradient%3E%20%3CclipPath%20id%3D%22fr%22%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2232%22%20r%3D%2232%22%2F%3E%3C%2FclipPath%3E%20%3C%2Fdefs%3E%20%3Cg%20clip-path%3D%22url%28%23fr%29%22%3E%20%3Crect%20width%3D%2264%22%20height%3D%2264%22%20fill%3D%22%23F8F8FC%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fw%29%22%20opacity%3D%220.9%22%20d%3D%22M-4%2052%20C%2010%2046%2C%2022%2058%2C%2034%2054%20C%2046%2050%2C%2056%2044%2C%2068%2050%20V%2068%20H%20-4%20Z%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2224%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2212%22%20cy%3D%2240%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2220%22%20r%3D%224%22%20fill%3D%22%233E434C%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2232%22%20r%3D%224%22%20fill%3D%22%2300A9C7%22%2F%3E%20%3Ccircle%20cx%3D%2224%22%20cy%3D%2244%22%20r%3D%224%22%20fill%3D%22%230B62CE%22%2F%3E%20%3Cpath%20fill%3D%22url%28%23fd%29%22%20fill-rule%3D%22evenodd%22%20d%3D%22M36%2016%20h6%20a16%2016%200%200%201%200%2032%20h-6%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20v-4%20a4%204%200%200%201%20-4%20-4%20v-6%20a4%204%200%200%201%204%20-4%20Z%20M42%2024%20v16%20a8%208%200%200%200%200%20-16%20Z%22%2F%3E%20%3C%2Fg%3E%20%3C%2Fsvg%3E" alt="" width="34" height="34">
         <div class="brand-word"><span class="duo">Duo</span><span class="ai">AI</span></div>
       </div>
       <div class="brand-tag">LabDuo · Medicina Diagnóstica</div>
@@ -728,3 +744,5 @@
   });
 })();
 </script>
+</body>
+</html>

@@ -16,18 +16,82 @@ function sendJSON(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+/** 8 MB is far more than a Worklab export needs, and bounds memory per request. */
+const MAX_BODY_BYTES = Number(process.env.MAX_BODY_BYTES || 8 * 1024 * 1024);
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
-    req.on("data", (chunk) => (data += chunk));
+    let bytes = 0;
+    let overflowed = false;
+    req.on("data", (chunk) => {
+      if (overflowed) return; // keep draining, stop accumulating
+      bytes += chunk.length;
+      // Without a cap, one oversized upload takes the process down with it —
+      // which from the outside looks exactly like the server going quiet.
+      if (bytes > MAX_BODY_BYTES) {
+        overflowed = true;
+        data = "";
+        // Rejected, not destroyed: tearing the socket down here would reach the
+        // browser as a connection error instead of a readable 413.
+        reject(Object.assign(new Error("Ficheiro demasiado grande (máx. 8 MB)."), { status: 413 }));
+        return;
+      }
+      data += chunk;
+    });
     req.on("end", () => resolve(data));
     req.on("error", reject);
   });
 }
 
+/** The path alone, without the query string, decoded. */
+function pathOf(url) {
+  const raw = (url || "/").split("?")[0].split("#")[0];
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+const CONTENT_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".webmanifest": "application/manifest+json",
+  ".txt": "text/plain; charset=utf-8",
+  ".woff2": "font/woff2",
+};
+
+function contentTypeFor(filePath) {
+  return CONTENT_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+}
+
 const server = http.createServer(async (req, res) => {
   try {
-    if (req.method === "POST" && req.url === "/api/b2c/generate") {
+    const route = pathOf(req.url);
+
+    // Health first, and on both spellings. This answered 404 before, so every
+    // uptime check and every person who typed /health concluded the server was
+    // down while it was serving requests perfectly well.
+    if (req.method === "GET" && (route === "/health" || route === "/healthz")) {
+      return sendJSON(res, 200, {
+        status: "ok",
+        service: "duoai-server",
+        uptimeSeconds: Math.round(process.uptime()),
+        time: new Date().toISOString(),
+      });
+    }
+
+    if (req.method === "POST" && route === "/api/b2c/generate") {
       const body = JSON.parse((await readBody(req)) || "{}");
       const leads = parseWorklabCSV(body.csv || "");
       // Nada do CSV é gravado: os rascunhos voltam na resposta e o operador
@@ -50,7 +114,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    if (req.method === "POST" && req.url === "/api/b2b/generate") {
+    if (req.method === "POST" && route === "/api/b2b/generate") {
       const body = JSON.parse((await readBody(req)) || "{}");
       const leads = parseLeadsInput(body.leads || "");
       const waLink = body.waLink || "https://wa.me/5500000000000";
@@ -59,18 +123,37 @@ const server = http.createServer(async (req, res) => {
     }
 
     // Serve o webapp estático (mesmo conteúdo publicado como artifact).
-    if (req.method === "GET") {
-      const filePath = req.url === "/" ? "index.html" : req.url.replace(/^\//, "");
+    // `route` já vem sem query string: `/?utm_source=x` servia 404 antes, o que
+    // fazia a app parecer morta a quem abria um link com parâmetros.
+    if (req.method === "GET" || req.method === "HEAD") {
+      const filePath = route === "/" ? "index.html" : route.replace(/^\/+/, "");
       const fullPath = path.join(WEBAPP_DIR, filePath);
-      if (fullPath.startsWith(WEBAPP_DIR) && fs.existsSync(fullPath)) {
-        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        return res.end(fs.readFileSync(fullPath));
+      // path.join already collapses "..", so this rejects anything that climbed
+      // out of the webapp directory.
+      if (
+        (fullPath === WEBAPP_DIR || fullPath.startsWith(WEBAPP_DIR + path.sep)) &&
+        fs.existsSync(fullPath) &&
+        fs.statSync(fullPath).isFile()
+      ) {
+        const body = fs.readFileSync(fullPath);
+        res.writeHead(200, {
+          // Served as text/html regardless of extension before, which meant a
+          // stylesheet or an icon was rejected by the browser.
+          "Content-Type": contentTypeFor(fullPath),
+          "Content-Length": body.length,
+        });
+        return res.end(req.method === "HEAD" ? undefined : body);
       }
     }
 
-    sendJSON(res, 404, { error: "not found" });
+    sendJSON(res, 404, { error: "not found", path: route });
   } catch (err) {
-    sendJSON(res, 500, { error: err.message });
+    if (!res.headersSent) {
+      sendJSON(res, err && err.status ? err.status : 500, { error: err.message });
+    }
+    // Let the rest of a rejected upload drain instead of sitting in the socket
+    // buffer holding the connection open.
+    if (!req.readableEnded) req.resume();
   }
 });
 
