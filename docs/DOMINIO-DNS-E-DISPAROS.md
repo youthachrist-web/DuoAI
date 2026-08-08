@@ -119,13 +119,38 @@ diagnóstico no ecrã de login.
 
 ---
 
+## 3.1. Hospedar o DuoAI na HostGator: o que dá e o que não dá
+
+Vale separar isto antes de mover nada, porque só metade do DuoAI pode viver numa
+hospedagem cPanel:
+
+| Peça | Onde pode ficar | Porquê |
+| --- | --- | --- |
+| Landing page (estática) | **HostGator, `public_html`** | São ficheiros; a hospedagem já está paga e a raiz do domínio funciona |
+| Webapp DuoAI (React) | HostGator **ou** Railway | Também é estático depois do build, mas precisa de falar com a API |
+| API do DuoAI (Node/Express) | **Railway** | Precisa de um processo permanente, variáveis de ambiente e deploy por commit |
+| Base de dados (PostgreSQL) | **Railway** | O cPanel da HostGator oferece MySQL, não PostgreSQL |
+| Agendador (relatórios, follow-ups) | **Railway** | Corre dentro do processo da API |
+
+Ou seja: mover o DuoAI inteiro para a HostGator não é possível sem reescrever a
+base de dados. O arranjo que funciona é o domínio ser da HostGator e os
+subdomínios apontarem para onde cada peça vive — exactamente a rota A da
+secção 1, sem mexer em nameserver.
+
 ## 4. O que configurar no DuoAI depois
 
 Nada disto está em código: são variáveis de ambiente do serviço `api-server`.
 
+**Já não é preciso configurar `MAIL_FROM` para os disparos funcionarem.** O
+servidor pergunta à Resend quais os domínios verificados e usa um, preferindo um
+domínio da LabDuo assim que ele existir. Hoje resolve para
+`LabDuo - Medicina Diagnóstica <labduo@oriondigital.pt>` e entrega a qualquer
+destinatário. `MAIL_FROM` continua a existir e continua a ganhar quando definida
+— serve para fixar o endereço à mão.
+
 | Variável | Valor | Efeito |
 | --- | --- | --- |
-| `MAIL_FROM` | `LabDuo - Medicina Diagnóstica <contato@envios.SEU-DOMINIO>` | Tira os disparos do sandbox; passa a entregar a qualquer destinatário |
+| `MAIL_FROM` | `LabDuo - Medicina Diagnóstica <contato@envios.SEU-DOMINIO>` | Fixa o remetente em vez de o descobrir |
 | `BRAND_SITE` | `https://SEU-DOMINIO` | Põe o site na assinatura dos emails e do WhatsApp |
 | `BRAND_LOGO_URL` | opcional | Por omissão usa `/labduo-logo.jpg` servido pelo próprio painel |
 
@@ -150,11 +175,21 @@ secção seguinte.
 - **`_dmarc.oriondigital.pt` não existe.** Falta o registo; adicioná-lo é o passo
   mais barato para melhorar a entrega desse domínio, com `p=none` para começar.
 
-Enquanto não houver domínio da LabDuo verificado, há duas saídas — e ambas são
-decisão de quem manda na marca, não minha:
+É por isso que o remetente passou a ser descoberto: os disparos usam
+`oriondigital.pt`, com o nome visível "LabDuo - Medicina Diagnóstica" na caixa de
+entrada. Funciona hoje — foi testado, com dois emails entregues a destinatários
+externos — e tem uma consequência honesta: quem inspecionar o endereço vê
+`oriondigital.pt` e não a LabDuo. No dia em que um subdomínio da LabDuo estiver
+verificado na Resend, o servidor troca sozinho, sem redeploy e sem configuração.
 
-1. **Verificar um subdomínio de um domínio da LabDuo** (rota certa a prazo).
-2. **Enviar por `oriondigital.pt` já verificado**, mantendo o nome visível
-   "LabDuo - Medicina Diagnóstica" na caixa de entrada. Funciona hoje, com uma
-   consequência honesta: quem inspecionar o endereço vê `oriondigital.pt` e não a
-   LabDuo. É uma variável de ambiente, reversível a qualquer momento.
+## 6. Fontes de dados de empresas (LinkedIn / Apify / open source)
+
+| Fonte | Estado verificado | Nota |
+| --- | --- | --- |
+| LinkedIn (NinjaPear, ex-Proxycurl) | **chave recusada (401)** | A Proxycurl foi descontinuada; a conta é agora NinjaPear em `https://nubela.co/api/v1`. A chave `WPL_AP1.…` é rejeitada nos três métodos de autenticação (Bearer, `X-API-Key`, `api_key`). Precisa de ser reemitida no painel da NinjaPear. |
+| Apify | **a funcionar** | Actores `harvestapi/linkedin-company-search` e `harvestapi/linkedin-company-employees`. Cobram por resultado, por isso todas as chamadas levam limite. |
+| OpenStreetMap / Overpass | **a funcionar** | Sem chave e sem custo. É a fonte que importa os leads das cidades. |
+
+A ordem é essa, e é automática: se a chave do LinkedIn passar a ser válida, ela
+assume a primeira posição sem nenhuma alteração de código. O estado ao vivo está
+em `/api/status` e em `/api/sdr/fontes`.
