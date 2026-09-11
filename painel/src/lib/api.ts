@@ -19,6 +19,12 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: init?.body ? { "Content-Type": "application/json", ...init?.headers } : init?.headers,
   });
+  if (r.status === 401) {
+    // A sessão caiu. Recarregar traz a página de entrada servida pela porta, em
+    // vez de deixar o painel a mostrar erros que não explicam nada.
+    window.location.reload();
+    throw new ErroDaApi(401, "sessão terminada");
+  }
   if (!r.ok) {
     // O servidor responde em JSON quando sabe explicar-se e em HTML quando rebentou.
     const texto = await r.text();

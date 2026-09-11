@@ -29,7 +29,9 @@ Sem dependências: é um processo que tem de arrancar sempre.
 | Variável | Para quê |
 | --- | --- |
 | `PORT` | porta de escuta (8080 por omissão) |
-| `API_PROXY_TARGET` | URL do `api-server`, sem barra no fim |
+| `API_PROXY_TARGET` | endereço do `api-server`, sem barra no fim. Em produção é o da rede privada: `http://api-server.railway.internal:8080` |
+| `PAINEL_SENHA` | senha de entrada. Sem ela o painel fica aberto — só para desenvolvimento |
+| `PAINEL_CHAVE` | chave para scripts, enviada no cabeçalho `x-chave` |
 
 ## Páginas
 
@@ -56,9 +58,24 @@ Vêm da base de dados; interpretá-los abriria a porta a HTML injectado.
 **Não há percentagens nem variações inventadas.** Um número só aparece se vier
 do servidor.
 
-## O que este painel não resolve
+## A porta está aqui, e não na API
 
-A API não pede autenticação nenhuma. Quem souber o endereço lê os leads todos,
-com telefones e emails. Isto já era assim antes desta reescrita e não se
-conserta aqui — tem de ser resolvido no `api-server`, cujo código também se
-perdeu. É o problema mais sério que continua em aberto, e é matéria de LGPD.
+O `api-server` não pede autenticação nenhuma, e o código dele perdeu-se — não se
+consegue alterar. Enquanto teve endereço público, qualquer pessoa que soubesse o
+URL lia os leads todos, com nomes, telefones e emails.
+
+Por isso a porta fecha-se aqui. Este processo é a única entrada: fala com a API
+pela rede privada do Railway, que não é alcançável de fora, e exige senha.
+
+Duas formas de entrar, ambas verificadas em tempo constante:
+
+- **pessoas** — a senha põe um bilhete assinado num cookie `HttpOnly`, válido 30
+  dias. `/sair` apaga-o.
+- **scripts** — o cabeçalho `x-chave` com o valor de `PAINEL_CHAVE`. É o que a
+  cópia diária e o remapeamento usam depois de a API deixar de ser pública.
+
+`/saude` fica sempre aberto: é por aí que o Railway confirma que o serviço
+arrancou, e fechá-lo impediria o serviço de ficar de pé.
+
+Um bilhete forjado, uma chave errada e uma senha errada devolvem todos 401 —
+está testado.
