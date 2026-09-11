@@ -14,6 +14,7 @@ import { Relatorios } from "./paginas/relatorios";
 import { Atividade } from "./paginas/atividade";
 import { Lembretes } from "./paginas/lembretes";
 import { CaixaDeEntrada } from "./paginas/caixa";
+import { Transcricao } from "./paginas/transcricao";
 
 const PAGINAS = [
   { caminho: "/", nome: "Painel", icone: I.Grelha, pagina: Painel },
@@ -28,6 +29,7 @@ const PAGINAS = [
   { caminho: "/atividade", nome: "Atividade", icone: I.Pulso, pagina: Atividade },
   { caminho: "/lembretes", nome: "Reminders", icone: I.Sino, pagina: Lembretes },
   { caminho: "/caixa", nome: "Inbox", icone: I.Caixa, pagina: CaixaDeEntrada },
+  { caminho: "/transcricao", nome: "Transcrição", icone: I.Microfone, pagina: Transcricao },
 ];
 
 function Topo() {

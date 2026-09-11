@@ -1,17 +1,48 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
+import * as I from "../componentes/icones";
 import { numero, quandoFoi } from "../lib/formatar";
-import { ACarregar, Aviso, Cabecalho, Cartao, Selo, Vazio } from "../componentes/base";
+import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio } from "../componentes/base";
+import { GARGALOS } from "../lib/nichos";
 
-const NOMES_DE_GARGALO: Record<string, string> = {
-  conformidade: "Conformidade legal e SST",
-  parceria: "Parceria (clínicas)",
-  absentismo: "Absentismo / crescimento",
-  beneficios: "Benefícios e retenção",
-  logistica: "Logística de exames",
-  "sem-analise": "Sem análise ainda",
-};
+type Origem = "todas" | "linkedin" | "mapa";
+
+function Decisor({ lead }: { lead: api.Lead }) {
+  const [estado, definir] = useState<"parado" | "a procurar" | "achou" | "nada">("parado");
+  const [nome, definirNome] = useState<string | null>(lead.ownerName);
+  const [erro, definirErro] = useState<string | null>(null);
+
+  async function procurar() {
+    definirErro(null);
+    definir("a procurar");
+    try {
+      const r = await api.procurarDecisor(lead.id);
+      if (r.decisor) {
+        definirNome(r.decisor);
+        definir("achou");
+      } else {
+        definir("nada");
+      }
+    } catch (e) {
+      definir("parado");
+      definirErro(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (nome) return <Selo tom="marca">{nome}</Selo>;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Botao pequeno variante="contorno" onClick={procurar} disabled={estado === "a procurar"}>
+        <I.Lupa className="h-3.5 w-3.5" />
+        {estado === "a procurar" ? "a procurar…" : "Procurar decisor agora"}
+      </Botao>
+      {estado === "nada" && <span className="text-xs text-suave">Sem contexto suficiente.</span>}
+      {erro && <span className="text-xs text-alerta">{erro}</span>}
+    </div>
+  );
+}
 
 function Origens() {
   const { dados, erro } = usarDados(api.origens, { intervaloMs: 60_000 });
@@ -42,7 +73,7 @@ function Origens() {
           <ul className="space-y-1.5 text-sm">
             {gargalos.map(([chave, n]) => (
               <li key={chave} className="flex items-baseline justify-between gap-3">
-                <span>{NOMES_DE_GARGALO[chave] ?? chave}</span>
+                <span>{GARGALOS[chave] ?? chave}</span>
                 <span className="tabular-nums text-suave">{numero(n)}</span>
               </li>
             ))}
@@ -56,7 +87,26 @@ function Origens() {
 export function Atividade() {
   const registo = usarDados(api.actividade, { intervaloMs: 20_000 });
   const comunicacoes = usarDados(() => api.comunicacoes(30), { intervaloMs: 60_000 });
+  const leads = usarDados(() => api.leads(600), { intervaloMs: 180_000 });
+
   const [aba, definirAba] = useState<"sistema" | "envios">("sistema");
+  const [origem, definirOrigem] = useState<Origem>("todas");
+  const [gargalo, definirGargalo] = useState("");
+  const [quantos, definirQuantos] = useState(20);
+
+  const filtrados = useMemo(() => {
+    return (leads.dados ?? []).filter((l) => {
+      if (origem === "linkedin" && !l.linkedinUrl) return false;
+      if (origem === "mapa" && l.linkedinUrl) return false;
+      if (gargalo && (l.bottleneckKind ?? "sem-analise") !== gargalo) return false;
+      return true;
+    });
+  }, [leads.dados, origem, gargalo]);
+
+  const gargalosPresentes = useMemo(() => {
+    const s = new Set((leads.dados ?? []).map((l) => l.bottleneckKind ?? "sem-analise"));
+    return [...s];
+  }, [leads.dados]);
 
   return (
     <div className="space-y-4">
@@ -66,8 +116,95 @@ export function Atividade() {
         accao={<span className="etiqueta !text-marca">ao vivo</span>}
       />
 
-      <Cartao titulo="Origem dos leads" etiqueta="de onde vieram">
+      <Cartao titulo="Origem dos leads" etiqueta="de onde vieram · quem decide">
         <Origens />
+      </Cartao>
+
+      <Cartao
+        titulo="Quem decide"
+        accao={<span className="etiqueta">{numero(filtrados.length)} leads</span>}
+      >
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(
+            [
+              ["todas", "Todas"],
+              ["linkedin", "LinkedIn"],
+              ["mapa", "Google Maps / OSM"],
+            ] as const
+          ).map(([v, nome]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => definirOrigem(v)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                origem === v ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+              }`}
+            >
+              {nome}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => definirGargalo("")}
+            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+              !gargalo ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+            }`}
+          >
+            Qualquer gargalo
+          </button>
+          {gargalosPresentes.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => definirGargalo(g)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                gargalo === g ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+              }`}
+            >
+              {GARGALOS[g] ?? g}
+            </button>
+          ))}
+        </div>
+
+        {leads.aCarregar && !leads.dados ? (
+          <ACarregar />
+        ) : !filtrados.length ? (
+          <Vazio>Nenhum lead com estes filtros.</Vazio>
+        ) : (
+          <>
+            <ul className="divide-y divide-borda/60">
+              {filtrados.slice(0, quantos).map((l) => (
+                <li key={l.id} className="py-3 first:pt-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium leading-snug">{l.businessName}</p>
+                      <p className="text-xs text-suave">
+                        {l.city} · {l.niche}
+                      </p>
+                      <p className="mt-0.5 text-xs text-tenue">
+                        {l.linkedinUrl ? "LinkedIn (via Apify)" : "Base de mapeamento (OpenStreetMap)"}
+                      </p>
+                    </div>
+                    <Selo>{GARGALOS[l.bottleneckKind ?? "sem-analise"] ?? l.bottleneckKind}</Selo>
+                  </div>
+                  <div className="mt-2">
+                    <Decisor lead={l} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {filtrados.length > quantos && (
+              <div className="pt-3 text-center">
+                <Botao variante="contorno" pequeno onClick={() => definirQuantos((q) => q + 20)}>
+                  Mostrar mais · restam {numero(filtrados.length - quantos)}
+                </Botao>
+              </div>
+            )}
+          </>
+        )}
       </Cartao>
 
       <Cartao

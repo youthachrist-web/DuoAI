@@ -211,3 +211,10 @@ export const Marca = ({ className = "h-8 w-8" }: { className?: string }) => (
     />
   </svg>
 );
+
+export const Microfone = (p: Props) => (
+  <Svg {...p}>
+    <rect x="9" y="2.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v4M8.5 21.5h7" />
+  </Svg>
+);

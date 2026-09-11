@@ -3,7 +3,8 @@ import * as api from "../lib/api";
 import * as I from "../componentes/icones";
 import { numero, dinheiro, quandoFoi } from "../lib/formatar";
 import { ACarregar, Barra, Cartao, Metrica, Pastilha, Selo, Vazio } from "../componentes/base";
-import { JANELAS, agoraEmBrasilia, janelaAberta } from "../lib/melhores-horas";
+import { SETORES } from "../lib/nichos";
+import { janelaAberta, janelaDoSetor, relogioDeBrasilia, textoDaJanela } from "../lib/melhores-horas";
 
 function MetaDoDia({ feito, meta }: { feito: number; meta: number }) {
   const falta = Math.max(0, meta - feito);
@@ -23,31 +24,74 @@ function MetaDoDia({ feito, meta }: { feito: number; meta: number }) {
   );
 }
 
-function Janelas() {
-  const { hora, diaDaSemana, texto } = agoraEmBrasilia();
-  const fimDeSemana = diaDaSemana === 0 || diaDaSemana === 6;
+/**
+ * A trajetória dos últimos trinta dias, desenhada à mão.
+ *
+ * Uma biblioteca de gráficos para duas linhas custava mais de descarregar do que
+ * o painel inteiro. O eixo vertical é partilhado pelas duas séries só quando
+ * ambas existem; com receita a zero, o gráfico mostra os leads e diz que é isso
+ * que está a mostrar, em vez de desenhar uma linha reta a fingir informação.
+ */
+function Trajetoria({ dias }: { dias: api.DiaDeReceita[] }) {
+  if (dias.length < 2) return <Vazio>Ainda não há dias suficientes para desenhar.</Vazio>;
+
+  const L = 320;
+  const A = 90;
+  const receitas = dias.map((d) => d.revenue);
+  const leads = dias.map((d) => d.leads);
+  const houveReceita = receitas.some((r) => r > 0);
+  const serie = houveReceita ? receitas : leads;
+  const topo = Math.max(1, ...serie);
+
+  const x = (i: number) => (i / (dias.length - 1)) * L;
+  const y = (v: number) => A - (v / topo) * (A - 6);
+  const linha = serie.map((v, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const area = `${linha} L${L},${A} L0,${A} Z`;
+
   return (
-    <Cartao titulo="Boas horas para escrever" etiqueta={`${texto} em brasília`}>
-      <div className="flex flex-wrap gap-2">
-        {JANELAS.map((j) => {
-          const aberta = janelaAberta(j, hora, diaDaSemana);
-          return (
-            <span
-              key={j.nome}
-              className={`rounded-xl border px-3 py-2 text-sm font-medium ${
-                aberta ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
-              }`}
-            >
-              {j.nome} · {j.inicio}h–{j.fim}h
-            </span>
-          );
-        })}
+    <>
+      <svg viewBox={`0 0 ${L} ${A}`} className="h-[90px] w-full" preserveAspectRatio="none" aria-hidden>
+        <path d={area} className="fill-marca/10" />
+        <path d={linha} className="stroke-marca" fill="none" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className="mt-2 flex items-baseline justify-between text-xs text-suave">
+        <span>{dias[0]?.date}</span>
+        <span className="font-medium">
+          {houveReceita ? "receita por dia" : `leads por dia · máximo ${numero(topo)}`}
+        </span>
+        <span>{dias[dias.length - 1]?.date}</span>
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-suave">
-        {fimDeSemana
-          ? "Fim de semana. As empresas não estão a trabalhar — vale esperar por segunda."
-          : "Verde é janela aberta agora. É horário comercial, não uma previsão: não há respostas suficientes para afirmar mais do que isto."}
-      </p>
+    </>
+  );
+}
+
+/** As janelas por setor, em hora de Brasília. Verde é janela aberta agora. */
+function Janelas() {
+  const agora = relogioDeBrasilia();
+  const linhas = SETORES.map((s) => {
+    const j = janelaDoSetor(s.nome);
+    return { setor: s, janela: j, aberta: janelaAberta(j) };
+  }).sort((a, b) => Number(b.aberta) - Number(a.aberta) || a.janela.inicioHora - b.janela.inicioHora);
+
+  return (
+    <Cartao titulo="Boas horas por setor" etiqueta={`${agora} em brasília`}>
+      <p className="mb-3 text-xs text-suave">Verde é boa hora agora.</p>
+      <ul className="space-y-1.5">
+        {linhas.map(({ setor, janela, aberta }) => (
+          <li
+            key={setor.nome}
+            className={`rounded-xl border px-3 py-2 ${aberta ? "border-marca bg-marca-tenue" : "border-borda"}`}
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <span className={`text-sm font-medium ${aberta ? "text-marca" : ""}`}>{setor.curto}</span>
+              <span className="shrink-0 font-mono text-xs tabular-nums text-suave">
+                {textoDaJanela(janela)}
+              </span>
+            </div>
+            <p className="mt-0.5 text-xs leading-relaxed text-suave">{janela.razao}</p>
+          </li>
+        ))}
+      </ul>
     </Cartao>
   );
 }
@@ -57,6 +101,7 @@ export function Painel() {
   const facetas = usarDados(api.facetas, { intervaloMs: 60_000 });
   const estado = usarDados(api.estado, { intervaloMs: 60_000 });
   const pipeline = usarDados(api.pipeline, { intervaloMs: 120_000 });
+  const trajetoria = usarDados(api.trajetoria, { intervaloMs: 300_000 });
   const agentes = usarDados(api.agentes, { intervaloMs: 60_000 });
 
   const r = resumo.dados;
@@ -103,6 +148,10 @@ export function Painel() {
 
       {r && <MetaDoDia feito={r.revenueToday} meta={r.dailyRevenueTarget} />}
 
+      <Cartao titulo="Trajetória" etiqueta="últimos 30 dias">
+        {!trajetoria.dados ? <ACarregar /> : <Trajetoria dias={trajetoria.dados} />}
+      </Cartao>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Cartao titulo="Funil" etiqueta="do primeiro contacto ao contrato">
           {!etapas.length ? (
@@ -147,8 +196,6 @@ export function Painel() {
           )}
         </Cartao>
 
-        <Janelas />
-
         <Cartao titulo="Estado do sistema">
           {!estado.dados ? (
             <ACarregar />
@@ -166,38 +213,40 @@ export function Painel() {
             </ul>
           )}
         </Cartao>
+
+        <Cartao titulo="Agentes">
+          {!agentes.dados ? (
+            <ACarregar />
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(agentes.dados).map(([chave, a]) => (
+                <div key={chave} className="rounded-xl border border-borda p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold">{a.name}</p>
+                    <Pastilha ok={a.status === "running" ? true : null}>
+                      {a.status === "running" ? "a correr" : a.status === "idle" ? "parado" : a.status}
+                    </Pastilha>
+                  </div>
+                  <p className="mt-1.5 text-xs text-suave">
+                    {numero(a.todayCount)} tratados · {numero(a.successCount)} com êxito
+                  </p>
+                  {a.currentTask && <p className="mt-1 text-xs text-suave">{a.currentTask}</p>}
+                  {a.lastRunAt && <p className="text-xs text-tenue">correu {quandoFoi(a.lastRunAt)}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Cartao>
       </div>
 
-      <Cartao titulo="Agentes" etiqueta="o que cada um anda a fazer">
-        {!agentes.dados ? (
-          <ACarregar />
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {Object.entries(agentes.dados).map(([chave, a]) => (
-              <div key={chave} className="rounded-xl border border-borda p-3.5">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{a.name}</p>
-                  <Pastilha ok={a.status === "running" ? true : null}>
-                    {a.status === "running" ? "a correr" : a.status === "idle" ? "parado" : a.status}
-                  </Pastilha>
-                </div>
-                <p className="mt-1.5 text-xs text-suave">
-                  {numero(a.todayCount)} tratados · {numero(a.successCount)} com êxito
-                </p>
-                {a.currentTask && <p className="mt-1 text-xs text-suave">{a.currentTask}</p>}
-                {a.lastRunAt && <p className="text-xs text-tenue">correu {quandoFoi(a.lastRunAt)}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-      </Cartao>
+      <Janelas />
 
       <Cartao titulo="Cidades com mais empresas">
         {!f?.cities.length ? (
           <Vazio>Ainda não há leads mapeados.</Vazio>
         ) : (
           <ol className="grid gap-2 sm:grid-cols-2">
-            {f.cities.slice(0, 12).map((c) => (
+            {f.cities.slice(0, 14).map((c) => (
               <li key={c.value} className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="truncate">{c.value}</span>
                 <span className="tabular-nums text-suave">{numero(c.count)}</span>

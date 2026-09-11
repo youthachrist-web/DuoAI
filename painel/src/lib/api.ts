@@ -364,3 +364,103 @@ export async function enviarBaseWorklab(
   }
   return texto ? JSON.parse(texto) : null;
 }
+
+/* ------------------------------------------------- exportação dos leads */
+
+export type FiltrosDeExportacao = {
+  period?: "today" | "week" | "month" | "all" | "new";
+  cidades?: string[];
+  setores?: string[];
+  has?: string[];
+  tiers?: string[];
+  scoreMin?: number;
+  naoContactados?: boolean;
+};
+
+export function parametrosDeExportacao(f: FiltrosDeExportacao): string {
+  const p = new URLSearchParams();
+  if (f.period) p.set("period", f.period);
+  if (f.cidades?.length) p.set("cidades", f.cidades.join(","));
+  if (f.setores?.length) p.set("setores", f.setores.join(","));
+  if (f.has?.length) p.set("has", f.has.join(","));
+  if (f.tiers?.length) p.set("tiers", f.tiers.join(","));
+  if (f.scoreMin && f.scoreMin > 0) p.set("scoreMin", String(f.scoreMin));
+  if (f.naoContactados) p.set("naoContactados", "1");
+  return p.toString();
+}
+
+/**
+ * Pede ao servidor a folha de cálculo já filtrada e devolve-a como ficheiro.
+ *
+ * A exportação é do servidor e não do browser de propósito: ele conhece a base
+ * inteira, e o painel só tem em memória o que já carregou. Um ficheiro montado
+ * aqui seria uma lista mais curta com o mesmo nome — a pior espécie de erro.
+ */
+export async function exportarLeads(f: FiltrosDeExportacao): Promise<Blob> {
+  const r = await fetch(`${BASE}/leads/export.csv?${parametrosDeExportacao(f)}`);
+  if (r.status === 401) {
+    window.location.reload();
+    throw new ErroDaApi(401, "sessão terminada");
+  }
+  if (!r.ok) throw new ErroDaApi(r.status, `não consegui baixar: o servidor respondeu ${r.status}`);
+  const blob = await r.blob();
+  if (blob.size === 0) throw new ErroDaApi(204, "o servidor devolveu um ficheiro vazio");
+  return blob;
+}
+
+/** Regista o que o lead pediu. Fica na ficha dele e muda a copy seguinte. */
+export const registarPedido = (id: number, kind: string, nota?: string) =>
+  post<unknown>(`/leads/${id}/request`, { kind, note: nota });
+
+/* ------------------------------------------------------------ transcrição */
+
+export type Transcricao = {
+  id: number;
+  text?: string;
+  language?: string | null;
+  source?: string | null;
+  createdAt?: string;
+};
+
+export const historicoDeTranscricoes = () => pedir<Transcricao[]>("/transcribe/history");
+
+export const transcreverPorUrl = (url: string) => post<Transcricao>("/transcribe/url", { url });
+
+export async function transcreverFicheiro(ficheiro: File): Promise<Transcricao> {
+  const forma = new FormData();
+  forma.append("file", ficheiro);
+  const r = await fetch(`${BASE}/transcribe`, { method: "POST", body: forma });
+  if (r.status === 401) {
+    window.location.reload();
+    throw new ErroDaApi(401, "sessão terminada");
+  }
+  const texto = await r.text();
+  if (!r.ok) {
+    let mensagem = `o servidor respondeu ${r.status}`;
+    try {
+      mensagem = (JSON.parse(texto) as { error?: string }).error ?? mensagem;
+    } catch {
+      /* fica a mensagem genérica */
+    }
+    throw new ErroDaApi(r.status, mensagem);
+  }
+  return JSON.parse(texto) as Transcricao;
+}
+
+/* ------------------------------------------------------ caixa de entrada */
+
+export type EmailRecebido = {
+  fromName: string;
+  fromEmail: string;
+  subject: string;
+  body: string;
+  instruction: string;
+};
+
+/** Escreve um rascunho de resposta ao email que foi colado. */
+export const rascunharResposta = (recebido: EmailRecebido) =>
+  post<{ subject?: string; draft?: string; error?: string }>("/inbox/draft", recebido);
+
+/** Envia a resposta pela Resend. `to` é livre — não precisa de ser um lead. */
+export const enviarResposta = (para: string, assunto: string, corpo: string) =>
+  post<{ error?: string }>("/inbox/send", { to: para, subject: assunto, body: corpo });

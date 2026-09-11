@@ -1,7 +1,9 @@
 import { useRef, useState } from "react";
+import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
-import { Aviso, Botao, Cabecalho, Cartao, Vazio, campo } from "../componentes/base";
+import { quandoFoi } from "../lib/formatar";
+import { Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componentes/base";
 
 const SUGESTOES = [
   "Resumo executivo de hoje",
@@ -10,7 +12,9 @@ const SUGESTOES = [
 ];
 
 export function Assistente() {
+  const conversas = usarDados(api.conversas, { intervaloMs: 300_000 });
   const [falas, definirFalas] = useState<api.Fala[]>([]);
+  const [historicoAberto, definirHistoricoAberto] = useState(false);
   const [texto, definirTexto] = useState("");
   const [aResponder, definirAResponder] = useState(false);
   const [erro, definirErro] = useState<string | null>(null);
@@ -54,13 +58,56 @@ export function Assistente() {
         titulo="DuoAI"
         descricao="O cérebro operacional da FourLife. Conhece a base, os leads e o que já foi feito."
         accao={
-          falas.length > 0 ? (
-            <Botao variante="contorno" pequeno onClick={() => definirFalas([])}>
-              Nova conversa
-            </Botao>
-          ) : undefined
+          <div className="flex gap-2">
+            {(conversas.dados?.length ?? 0) > 0 && (
+              <Botao variante="contorno" pequeno onClick={() => definirHistoricoAberto((a) => !a)}>
+                Histórico
+              </Botao>
+            )}
+            {falas.length > 0 && (
+              <Botao variante="contorno" pequeno onClick={() => definirFalas([])}>
+                Nova conversa
+              </Botao>
+            )}
+          </div>
         }
       />
+
+      {historicoAberto && (
+        <Cartao titulo="Conversas anteriores">
+          {!conversas.dados?.length ? (
+            <Vazio>Ainda não há conversas guardadas.</Vazio>
+          ) : (
+            <ul className="space-y-2">
+              {conversas.dados.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 text-sm">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 truncate text-left hover:text-marca"
+                    onClick={async () => {
+                      try {
+                        const m = await api.mensagensDaConversa(c.id);
+                        definirFalas(
+                          m.map((x) => ({
+                            role: x.role === "assistant" ? "assistant" : "user",
+                            content: x.content,
+                          })),
+                        );
+                        definirHistoricoAberto(false);
+                      } catch (e) {
+                        definirErro(e instanceof Error ? e.message : String(e));
+                      }
+                    }}
+                  >
+                    {c.title ?? `Conversa #${c.id}`}
+                  </button>
+                  {c.createdAt && <Selo>{quandoFoi(c.createdAt)}</Selo>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Cartao>
+      )}
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
 

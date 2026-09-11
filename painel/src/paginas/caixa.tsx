@@ -1,129 +1,161 @@
 import { useState } from "react";
-import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
-import { quandoFoi } from "../lib/formatar";
-import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componentes/base";
+import { Aviso, Botao, Cabecalho, Cartao, campo } from "../componentes/base";
+
+const VAZIO: api.EmailRecebido = { fromName: "", fromEmail: "", subject: "", body: "", instruction: "" };
 
 export function CaixaDeEntrada() {
-  const historico = usarDados(() => api.comunicacoes(50), { intervaloMs: 60_000 });
-  const leads = usarDados(() => api.leads(500));
-
-  const [leadId, definirLeadId] = useState("");
-  const [assunto, definirAssunto] = useState("");
-  const [corpo, definirCorpo] = useState("");
+  const [recebido, definirRecebido] = useState<api.EmailRecebido>(VAZIO);
+  const [resposta, definirResposta] = useState({ to: "", subject: "", body: "" });
   const [ocupado, definirOcupado] = useState<"rascunho" | "envio" | null>(null);
   const [erro, definirErro] = useState<string | null>(null);
   const [nota, definirNota] = useState<string | null>(null);
+  const [copiado, definirCopiado] = useState(false);
 
-  const comEmail = (leads.dados ?? []).filter((l) => l.email);
+  const mudar = (campo: keyof api.EmailRecebido) => (v: string) =>
+    definirRecebido((r) => ({ ...r, [campo]: v }));
 
   async function rascunhar() {
-    if (!leadId) {
-      definirErro("Escolhe primeiro a empresa.");
-      return;
-    }
     definirErro(null);
     definirNota(null);
     definirOcupado("rascunho");
     try {
-      const r = await api.rascunhoDeEmail(Number(leadId));
-      definirAssunto(r.subject ?? r.assunto ?? "");
-      definirCorpo(r.body ?? r.corpo ?? "");
+      const r = await api.rascunharResposta(recebido);
+      if (r.error) definirErro(r.error);
+      else
+        definirResposta({
+          to: recebido.fromEmail,
+          subject: r.subject ?? "",
+          body: r.draft ?? "",
+        });
     } catch (e) {
-      definirErro(e instanceof Error ? e.message : String(e));
+      definirErro(`Erro ao gerar rascunho: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       definirOcupado(null);
     }
   }
 
   async function enviar() {
-    if (!leadId) return;
     definirErro(null);
     definirNota(null);
     definirOcupado("envio");
     try {
-      const r = await api.enviarEmail(Number(leadId), { subject: assunto, body: corpo });
-      // Só se diz "enviado" quando o servidor o afirma. Um HTTP 200 não é prova.
-      if (r?.sent === false) definirErro(r.error ?? "O servidor não confirmou o envio.");
+      const r = await api.enviarResposta(resposta.to, resposta.subject, resposta.body);
+      // Só se diz "enviado" quando o servidor não devolve erro. Um HTTP 200 com
+      // {error} continua a ser uma falha, e já enganou uma vez.
+      if (r?.error) definirErro(r.error);
       else {
-        definirNota("Email enviado.");
-        await historico.recarregar();
+        definirNota("Email enviado com sucesso.");
+        definirResposta({ to: "", subject: "", body: "" });
+        definirRecebido(VAZIO);
       }
     } catch (e) {
-      definirErro(e instanceof Error ? e.message : String(e));
+      definirErro(`Erro ao enviar email: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       definirOcupado(null);
     }
   }
 
+  const podeRascunhar = recebido.body.trim().length > 10 && !!recebido.fromEmail.trim();
+  const podeEnviar = !!resposta.to.trim() && !!resposta.subject.trim() && !!resposta.body.trim();
+
   return (
     <div className="space-y-4">
-      <Cabecalho titulo="Caixa" descricao="Escrever a um lead por email, com o rascunho preparado pelo assistente." />
+      <Cabecalho
+        titulo="Caixa"
+        descricao="Cola o email que recebeste, diz em que direção queres responder, e o assistente escreve o rascunho."
+      />
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
       {nota && <p className="text-sm text-bom">{nota}</p>}
 
-      <Cartao titulo="Escrever">
-        <select className={campo} value={leadId} onChange={(e) => definirLeadId(e.target.value)}>
-          <option value="">Escolher empresa…</option>
-          {comEmail.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.businessName} · {l.email}
-            </option>
-          ))}
-        </select>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Cartao titulo="Email recebido">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              className={campo}
+              placeholder="Nome do remetente"
+              value={recebido.fromName}
+              onChange={(e) => mudar("fromName")(e.target.value)}
+            />
+            <input
+              className={campo}
+              placeholder="Email do remetente"
+              value={recebido.fromEmail}
+              onChange={(e) => mudar("fromEmail")(e.target.value)}
+            />
+          </div>
+          <input
+            className={`${campo} mt-2`}
+            placeholder="Assunto do email recebido"
+            value={recebido.subject}
+            onChange={(e) => mudar("subject")(e.target.value)}
+          />
+          <textarea
+            className={`${campo} mt-2 min-h-40 resize-y`}
+            placeholder="Cola aqui o conteúdo do email que recebeste…"
+            value={recebido.body}
+            onChange={(e) => mudar("body")(e.target.value)}
+          />
+          <input
+            className={`${campo} mt-2`}
+            placeholder="Ex: responder com interesse mas pedir mais detalhes"
+            value={recebido.instruction}
+            onChange={(e) => mudar("instruction")(e.target.value)}
+          />
+          <div className="mt-3">
+            <Botao onClick={rascunhar} disabled={!podeRascunhar || ocupado !== null}>
+              <I.Robo className="h-4 w-4" />
+              {ocupado === "rascunho" ? "a gerar rascunho…" : "Gerar rascunho"}
+            </Botao>
+          </div>
+        </Cartao>
 
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Botao variante="contorno" onClick={rascunhar} disabled={!leadId || ocupado !== null}>
-            <I.Robo className="h-4 w-4" />
-            {ocupado === "rascunho" ? "a escrever…" : "Preparar rascunho"}
-          </Botao>
-        </div>
-
-        <input
-          className={`${campo} mt-3`}
-          placeholder="Assunto"
-          value={assunto}
-          onChange={(e) => definirAssunto(e.target.value)}
-        />
-        <textarea
-          className={`${campo} mt-2 min-h-44 resize-y`}
-          placeholder="Corpo do email"
-          value={corpo}
-          onChange={(e) => definirCorpo(e.target.value)}
-        />
-
-        <div className="mt-3">
-          <Botao onClick={enviar} disabled={!leadId || !assunto.trim() || !corpo.trim() || ocupado !== null}>
-            <I.Caixa className="h-4 w-4" />
-            {ocupado === "envio" ? "a enviar…" : "Enviar email"}
-          </Botao>
-        </div>
-      </Cartao>
-
-      <Cartao titulo="O que já saiu">
-        {!historico.dados ? (
-          <ACarregar />
-        ) : !historico.dados.length ? (
-          <Vazio>Ainda não saiu nenhuma mensagem.</Vazio>
-        ) : (
-          <ul className="space-y-3">
-            {historico.dados.map((c) => (
-              <li key={c.id} className="border-b border-borda/60 pb-3 last:border-0 last:pb-0">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm font-medium leading-snug">{c.subject ?? c.type ?? c.channel}</p>
-                  <Selo tom={c.status === "sent" || c.status === "delivered" ? "bom" : "neutro"}>
-                    {c.status}
-                  </Selo>
-                </div>
-                <p className="mt-0.5 break-all text-xs text-suave">{c.toAddress}</p>
-                {c.createdAt && <p className="text-xs text-tenue">{quandoFoi(c.createdAt)}</p>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Cartao>
+        <Cartao
+          titulo="Resposta"
+          accao={
+            resposta.body ? (
+              <Botao
+                pequeno
+                variante="contorno"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(resposta.body);
+                  definirCopiado(true);
+                  setTimeout(() => definirCopiado(false), 1800);
+                }}
+              >
+                {copiado ? "copiado" : "copiar"}
+              </Botao>
+            ) : undefined
+          }
+        >
+          <input
+            className={campo}
+            placeholder="Para"
+            value={resposta.to}
+            onChange={(e) => definirResposta((r) => ({ ...r, to: e.target.value }))}
+          />
+          <input
+            className={`${campo} mt-2`}
+            placeholder="Assunto"
+            value={resposta.subject}
+            onChange={(e) => definirResposta((r) => ({ ...r, subject: e.target.value }))}
+          />
+          <textarea
+            className={`${campo} mt-2 min-h-52 resize-y`}
+            placeholder="O rascunho aparece aqui, e podes mudá-lo antes de enviar."
+            value={resposta.body}
+            onChange={(e) => definirResposta((r) => ({ ...r, body: e.target.value }))}
+          />
+          <div className="mt-3">
+            <Botao onClick={enviar} disabled={!podeEnviar || ocupado !== null}>
+              <I.Caixa className="h-4 w-4" />
+              {ocupado === "envio" ? "a enviar…" : "Enviar via Resend"}
+            </Botao>
+          </div>
+        </Cartao>
+      </div>
     </div>
   );
 }

@@ -1,85 +1,275 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
 import { numero, data } from "../lib/formatar";
-import { ACarregar, Botao, Cabecalho, Cartao, Selo, Tabela, Vazio, campo } from "../componentes/base";
+import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componentes/base";
+import { TIPOS_DE_PEDIDO } from "../lib/nichos";
+import { janelaAberta, janelaDoSetor, textoDaJanela } from "../lib/melhores-horas";
 
-const CAMPOS_CSV = [
-  "id",
-  "businessName",
-  "city",
-  "niche",
-  "tier",
-  "score",
-  "phone",
-  "whatsapp",
-  "email",
-  "website",
-  "address",
-  "stage",
-  "lastContactedAt",
+const PERIODOS = [
+  { valor: "all", nome: "Toda a base de leads" },
+  { valor: "today", nome: "Só os de hoje" },
+  { valor: "week", nome: "Desta semana" },
+  { valor: "month", nome: "Deste mês" },
+  { valor: "new", nome: "Novos desde o último download" },
 ] as const;
 
-/** Uma célula de CSV que aguenta vírgulas, aspas e quebras de linha lá dentro. */
-function celula(v: unknown): string {
-  const s = v === null || v === undefined ? "" : String(v);
-  return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
+type Periodo = (typeof PERIODOS)[number]["valor"];
 
-function baixarCsv(lista: api.Lead[]) {
-  const linhas = [
-    CAMPOS_CSV.join(";"),
-    ...lista.map((l) => CAMPOS_CSV.map((c) => celula((l as Record<string, unknown>)[c])).join(";")),
-  ];
-  // O BOM é o que faz o Excel em português abrir os acentos como deve ser.
-  const blob = new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `fourlife-leads-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+/* ------------------------------------------------------- filtros lado a lado */
 
-function Sinais({ lead }: { lead: api.Lead }) {
-  const sinais: string[] = [];
-  if (lead.whatsapp) sinais.push("WhatsApp");
-  else if (lead.phone) sinais.push("telefone");
-  if (lead.email) sinais.push("email");
-  if (lead.website) sinais.push("site");
-  if (lead.linkedinUrl) sinais.push("LinkedIn");
-  if (!sinais.length) return <span className="text-tenue">sem contacto</span>;
+function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <span className="flex flex-wrap gap-1">
-      {sinais.map((s) => (
-        <Selo key={s}>{s}</Selo>
-      ))}
-    </span>
+    <div className="border-b border-borda py-3 first:pt-0 last:border-0">
+      <p className="etiqueta mb-2">{titulo}</p>
+      {children}
+    </div>
   );
 }
 
+function ListaDeMarcas({
+  opcoes,
+  escolhidas,
+  aoMudar,
+  altura = "max-h-44",
+}: {
+  opcoes: { value: string; count: number }[];
+  escolhidas: string[];
+  aoMudar: (v: string[]) => void;
+  altura?: string;
+}) {
+  if (!opcoes.length) return <p className="text-xs text-suave">Nada mapeado ainda.</p>;
+  return (
+    <>
+      <div className="mb-1.5 flex gap-3 text-xs">
+        <button type="button" className="text-marca" onClick={() => aoMudar(opcoes.map((o) => o.value))}>
+          selecionar tudo
+        </button>
+        <button type="button" className="text-suave" onClick={() => aoMudar([])}>
+          limpar
+        </button>
+      </div>
+      <div className={`${altura} space-y-1 overflow-y-auto pr-1`}>
+        {opcoes.map((o) => (
+          <label key={o.value} className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 shrink-0 accent-marca"
+              checked={escolhidas.includes(o.value)}
+              onChange={(e) =>
+                aoMudar(
+                  e.target.checked
+                    ? [...escolhidas, o.value]
+                    : escolhidas.filter((v) => v !== o.value),
+                )
+              }
+            />
+            <span className="min-w-0 flex-1 truncate">{o.value}</span>
+            <span className="shrink-0 font-mono text-xs text-tenue">{o.count}</span>
+          </label>
+        ))}
+      </div>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------ a copy do lead */
+
+function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
+  const [texto, definirTexto] = useState<string | null>(null);
+  const [aCarregar, definirACarregar] = useState(false);
+  const [erro, definirErro] = useState<string | null>(null);
+  const [copiado, definirCopiado] = useState(false);
+  const [pedido, definirPedido] = useState<string>("");
+  const [notaDoPedido, definirNotaDoPedido] = useState<string | null>(null);
+
+  const janela = janelaDoSetor(lead.niche);
+  const boaHora = janelaAberta(janela);
+
+  async function gerar() {
+    definirErro(null);
+    definirACarregar(true);
+    try {
+      const r = await api.rascunhoDeMensagem(lead.id);
+      definirTexto(r.message ?? r.mensagem ?? "");
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      definirACarregar(false);
+    }
+  }
+
+  async function disparar() {
+    definirErro(null);
+    // A janela abre antes de qualquer espera, senão o browser bloqueia-a como popup.
+    const nova = window.open("", "_blank", "noopener");
+    try {
+      const r = await api.linkDaConversa(lead.id);
+      if (r.url && nova) nova.location.href = r.url;
+      else {
+        nova?.close();
+        definirErro("Este lead não tem número — usa o email ou procura o contacto no site.");
+      }
+    } catch (e) {
+      nova?.close();
+      definirErro(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function registar() {
+    if (!pedido) return;
+    definirErro(null);
+    try {
+      await api.registarPedido(lead.id, pedido);
+      definirNotaDoPedido("Pedido registado.");
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  // A copy pede-se uma vez, ao abrir. Chamar isto durante o render fazia um ciclo.
+  useEffect(() => {
+    void gerar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id]);
+
+  return (
+    <div
+      className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
+      onClick={aoFechar}
+    >
+      <div
+        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-borda px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="font-semibold leading-snug">{lead.businessName}</h2>
+            <p className="text-xs text-suave">
+              {lead.city} · {lead.niche}
+            </p>
+          </div>
+          <button type="button" onClick={aoFechar} className="etiqueta shrink-0">
+            fechar
+          </button>
+        </header>
+
+        <div className="space-y-4 p-4">
+          <div className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${boaHora ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"}`}>
+            <strong>{textoDaJanela(janela)}</strong> · {janela.razao}
+            {boaHora && " É boa hora agora."}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className="etiqueta">Copy modelada para o setor</p>
+              <div className="flex gap-2">
+                <Botao pequeno variante="contorno" onClick={gerar} disabled={aCarregar}>
+                  {aCarregar ? "a escrever…" : "Regerar"}
+                </Botao>
+                <Botao
+                  pequeno
+                  variante="contorno"
+                  disabled={!texto}
+                  onClick={async () => {
+                    if (!texto) return;
+                    await navigator.clipboard.writeText(texto);
+                    definirCopiado(true);
+                    setTimeout(() => definirCopiado(false), 1800);
+                  }}
+                >
+                  {copiado ? "copiado" : "copiar"}
+                </Botao>
+              </div>
+            </div>
+            {aCarregar && texto === null ? (
+              <ACarregar>a modelar a copy…</ACarregar>
+            ) : (
+              <p className="whitespace-pre-wrap rounded-xl bg-fundo p-3 text-sm leading-relaxed">
+                {texto || "O servidor não devolveu texto."}
+              </p>
+            )}
+          </div>
+
+          {erro && <Aviso tom="erro">{erro}</Aviso>}
+
+          <Botao onClick={disparar} className="w-full" disabled={!lead.whatsapp && !lead.phone}>
+            <I.Conversa className="h-4 w-4" />
+            {lead.whatsapp || lead.phone ? "DISPARAR NO WHATSAPP" : "Sem número de WhatsApp"}
+          </Botao>
+          <p className="text-center text-xs text-suave">
+            O WhatsApp abre com o texto pronto; és tu que confirmas o envio.
+          </p>
+
+          <div className="border-t border-borda pt-4">
+            <p className="etiqueta mb-2">Registar interesse / pedido do lead</p>
+            <div className="flex gap-2">
+              <select className={campo} value={pedido} onChange={(e) => definirPedido(e.target.value)}>
+                <option value="">Escolher…</option>
+                {TIPOS_DE_PEDIDO.map((t) => (
+                  <option key={t.valor} value={t.valor}>
+                    {t.nome}
+                  </option>
+                ))}
+              </select>
+              <Botao variante="contorno" onClick={registar} disabled={!pedido}>
+                Registar
+              </Botao>
+            </div>
+            {notaDoPedido && <p className="mt-2 text-sm text-bom">{notaDoPedido}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ página */
+
 export function Leads() {
-  const lista = usarDados(() => api.leads(2000), { intervaloMs: 120_000 });
-  const facetas = usarDados(api.facetas, { intervaloMs: 120_000 });
+  const lista = usarDados(() => api.leads(2000), { intervaloMs: 180_000 });
+  const facetas = usarDados(api.facetas, { intervaloMs: 180_000 });
   const exportacao = usarDados(api.ultimaExportacao);
 
   const [procura, definirProcura] = useState("");
-  const [cidade, definirCidade] = useState("");
-  const [setor, definirSetor] = useState("");
-  const [tier, definirTier] = useState("");
-  const [soComContacto, definirSoComContacto] = useState(false);
-  const [soPorContactar, definirSoPorContactar] = useState(false);
-  const [quantos, definirQuantos] = useState(100);
+  const [periodo, definirPeriodo] = useState<Periodo>("all");
+  const [cidades, definirCidades] = useState<string[]>([]);
+  const [setores, definirSetores] = useState<string[]>([]);
+  const [tiers, definirTiers] = useState<string[]>([]);
+  const [contacto, definirContacto] = useState<string[]>([]);
+  const [site, definirSite] = useState<"" | "sim" | "nao">("");
+  const [scoreMin, definirScoreMin] = useState(0);
+  const [naoContactados, definirNaoContactados] = useState(false);
+  const [quantos, definirQuantos] = useState(50);
+  const [aberto, definirAberto] = useState<api.Lead | null>(null);
+  const [filtrosAbertos, definirFiltrosAbertos] = useState(false);
+  const [aBaixar, definirABaixar] = useState(false);
+  const [erroDoDownload, definirErroDoDownload] = useState<string | null>(null);
+
+  const filtros: api.FiltrosDeExportacao = {
+    period: periodo,
+    cidades,
+    setores,
+    tiers,
+    has: contacto,
+    scoreMin,
+    naoContactados,
+  };
 
   const filtrados = useMemo(() => {
     const p = procura.trim().toLowerCase();
     return (lista.dados ?? []).filter((l) => {
-      if (cidade && l.city !== cidade) return false;
-      if (setor && l.niche !== setor) return false;
-      if (tier && l.tier !== tier) return false;
-      if (soComContacto && !l.whatsapp && !l.phone) return false;
-      if (soPorContactar && l.lastContactedAt) return false;
+      if (cidades.length && !cidades.includes(l.city)) return false;
+      if (setores.length && !setores.includes(l.niche)) return false;
+      if (tiers.length && !tiers.includes(l.tier)) return false;
+      if (scoreMin && l.score < scoreMin) return false;
+      if (naoContactados && l.lastContactedAt) return false;
+      if (site === "sim" && !l.website) return false;
+      if (site === "nao" && l.website) return false;
+      if (contacto.includes("whatsapp") && !l.whatsapp) return false;
+      if (contacto.includes("email") && !l.email) return false;
+      if (contacto.includes("telefone") && !l.phone && !l.whatsapp) return false;
       if (!p) return true;
       return (
         l.businessName.toLowerCase().includes(p) ||
@@ -89,135 +279,241 @@ export function Leads() {
         (l.whatsapp ?? "").includes(p)
       );
     });
-  }, [lista.dados, procura, cidade, setor, tier, soComContacto, soPorContactar]);
+  }, [lista.dados, procura, cidades, setores, tiers, contacto, site, scoreMin, naoContactados]);
+
+  async function baixar() {
+    definirErroDoDownload(null);
+    definirABaixar(true);
+    try {
+      const blob = await api.exportarLeads(filtros);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `duoai-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      await exportacao.recarregar();
+    } catch (e) {
+      definirErroDoDownload(e instanceof Error ? e.message : String(e));
+    } finally {
+      definirABaixar(false);
+    }
+  }
+
+  const nFiltros =
+    cidades.length + setores.length + tiers.length + contacto.length + (site ? 1 : 0) + (scoreMin ? 1 : 0);
+
+  const painelDeFiltros = (
+    <div className="rounded-2xl border border-borda bg-cartao p-4">
+      <Grupo titulo="Período">
+        <select className={campo} value={periodo} onChange={(e) => definirPeriodo(e.target.value as Periodo)}>
+          {PERIODOS.map((p) => (
+            <option key={p.valor} value={p.valor}>
+              {p.nome}
+            </option>
+          ))}
+        </select>
+      </Grupo>
+
+      <Grupo titulo="Cidade">
+        <ListaDeMarcas opcoes={facetas.dados?.cities ?? []} escolhidas={cidades} aoMudar={definirCidades} />
+      </Grupo>
+
+      <Grupo titulo="Setor">
+        <ListaDeMarcas opcoes={facetas.dados?.sectors ?? []} escolhidas={setores} aoMudar={definirSetores} />
+      </Grupo>
+
+      <Grupo titulo="Tier">
+        <ListaDeMarcas
+          opcoes={facetas.dados?.tiers ?? []}
+          escolhidas={tiers}
+          aoMudar={definirTiers}
+          altura="max-h-28"
+        />
+      </Grupo>
+
+      <Grupo titulo="Contacto">
+        {(
+          [
+            ["whatsapp", "Com WhatsApp"],
+            ["email", "Com email"],
+            ["telefone", "Com telefone"],
+          ] as const
+        ).map(([v, nome]) => (
+          <label key={v} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-marca"
+              checked={contacto.includes(v)}
+              onChange={(e) =>
+                definirContacto(e.target.checked ? [...contacto, v] : contacto.filter((c) => c !== v))
+              }
+            />
+            {nome}
+          </label>
+        ))}
+        <label className="mt-1 flex cursor-pointer items-center gap-2 py-0.5 text-sm">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-marca"
+            checked={naoContactados}
+            onChange={(e) => definirNaoContactados(e.target.checked)}
+          />
+          Ainda não contactados
+        </label>
+      </Grupo>
+
+      <Grupo titulo="Site">
+        <select className={campo} value={site} onChange={(e) => definirSite(e.target.value as "" | "sim" | "nao")}>
+          <option value="">Tanto faz</option>
+          <option value="sim">Com site</option>
+          <option value="nao">Sem site</option>
+        </select>
+      </Grupo>
+
+      <Grupo titulo={`Score mínimo${scoreMin ? `: ${scoreMin}` : ""}`}>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={scoreMin}
+          onChange={(e) => definirScoreMin(Number(e.target.value))}
+          className="w-full accent-marca"
+        />
+        {!scoreMin && <p className="text-xs text-suave">Qualquer score.</p>}
+      </Grupo>
+
+      {nFiltros > 0 && (
+        <div className="pt-3">
+          <Botao
+            variante="contorno"
+            pequeno
+            onClick={() => {
+              definirCidades([]);
+              definirSetores([]);
+              definirTiers([]);
+              definirContacto([]);
+              definirSite("");
+              definirScoreMin(0);
+              definirNaoContactados(false);
+            }}
+          >
+            Limpar filtros ({nFiltros})
+          </Botao>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-4">
       <Cabecalho
         titulo="Pipeline B2B · SST"
-        descricao="Empresas de risco operacional mapeadas em Santa Catarina, Rio Grande do Sul e São Paulo. Abre a mensagem para ver a copy já modelada para o setor e disparar."
+        descricao="Empresas de risco operacional mapeadas em Santa Catarina, Rio Grande do Sul e São Paulo. Abre a copy para ver a mensagem já modelada para o setor e disparar."
       />
 
       <Cartao>
         <div className="flex flex-wrap items-center gap-2">
-          <Botao
-            variante="contorno"
-            onClick={() => baixarCsv(filtrados)}
-            disabled={!filtrados.length}
-          >
+          <Botao variante="contorno" onClick={baixar} disabled={aBaixar}>
             <I.Descarregar className="h-4 w-4" />
-            Baixar lista {filtrados.length ? `(${numero(filtrados.length)})` : ""}
+            {aBaixar ? "a preparar a folha…" : "Baixar lista"}
           </Botao>
           <span className="text-xs text-suave">
             {exportacao.dados?.at
               ? `Último download: ${data(exportacao.dados.at)}`
-              : "Ainda não houve nenhum download."}
+              : "Ainda não houve nenhum download — desta vez sai a base toda."}
           </span>
         </div>
-
-        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative sm:col-span-2 lg:col-span-1">
-            <I.Lupa className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
-            <input
-              className={`${campo} pl-9`}
-              placeholder="Procurar empresa, email, número"
-              value={procura}
-              onChange={(e) => definirProcura(e.target.value)}
-            />
+        {erroDoDownload && (
+          <div className="mt-3">
+            <Aviso tom="erro">Não foi possível baixar: {erroDoDownload}</Aviso>
           </div>
-          <select className={campo} value={tier} onChange={(e) => definirTier(e.target.value)}>
-            <option value="">Todos os tiers</option>
-            {facetas.dados?.tiers.map((t) => (
-              <option key={t.value} value={t.value}>
-                Tier {t.value} ({numero(t.count)})
-              </option>
-            ))}
-          </select>
-          <select className={campo} value={cidade} onChange={(e) => definirCidade(e.target.value)}>
-            <option value="">Todas as cidades</option>
-            {facetas.dados?.cities.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.value} ({numero(c.count)})
-              </option>
-            ))}
-          </select>
-          <select className={campo} value={setor} onChange={(e) => definirSetor(e.target.value)}>
-            <option value="">Todos os setores</option>
-            {facetas.dados?.sectors.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.value} ({numero(s.count)})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={soComContacto}
-              onChange={(e) => definirSoComContacto(e.target.checked)}
-              className="h-4 w-4 accent-marca"
-            />
-            Com telefone ou WhatsApp
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={soPorContactar}
-              onChange={(e) => definirSoPorContactar(e.target.checked)}
-              className="h-4 w-4 accent-marca"
-            />
-            Ainda não contactados
-          </label>
-        </div>
-      </Cartao>
-
-      <Cartao
-        titulo={`${numero(filtrados.length)} de ${numero(lista.dados?.length ?? 0)} leads`}
-        semPadding
-      >
-        {lista.aCarregar && !lista.dados ? (
-          <ACarregar>A carregar a lista…</ACarregar>
-        ) : !filtrados.length ? (
-          <Vazio>Nenhum lead corresponde a estes filtros.</Vazio>
-        ) : (
-          <>
-            <Tabela colunas={["Empresa", "Onde", "Pontos", "Sinais", "Falámos"]}>
-              {filtrados.slice(0, quantos).map((l) => (
-                <tr key={l.id} className="border-b border-borda/60 last:border-0">
-                  <td className="px-4 py-3">
-                    <p className="font-medium leading-snug">{l.businessName}</p>
-                    <p className="font-mono text-xs text-suave">{l.whatsapp ?? l.phone ?? l.email ?? "—"}</p>
-                  </td>
-                  <td className="px-4 py-3 align-top text-suave">
-                    <p>{l.city}</p>
-                    <p className="text-xs text-tenue">{l.niche}</p>
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <Selo tom={l.tier === "A" ? "marca" : "neutro"}>
-                      {l.score} · {l.tier}
-                    </Selo>
-                  </td>
-                  <td className="px-4 py-3 align-top text-xs">
-                    <Sinais lead={l} />
-                  </td>
-                  <td className="px-4 py-3 text-right align-top text-suave">
-                    {l.lastContactedAt ? data(l.lastContactedAt) : <span className="text-tenue">nunca</span>}
-                  </td>
-                </tr>
-              ))}
-            </Tabela>
-            {filtrados.length > quantos && (
-              <div className="border-t border-borda p-4 text-center">
-                <Botao variante="contorno" onClick={() => definirQuantos((q) => q + 200)}>
-                  Mostrar mais {numero(Math.min(200, filtrados.length - quantos))}
-                </Botao>
-              </div>
-            )}
-          </>
         )}
+
+        <div className="relative mt-3">
+          <I.Lupa className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
+          <input
+            className={`${campo} pl-9`}
+            placeholder="Procurar empresa, email, número"
+            value={procura}
+            onChange={(e) => definirProcura(e.target.value)}
+          />
+        </div>
+
+        <div className="mt-2 lg:hidden">
+          <Botao variante="contorno" pequeno onClick={() => definirFiltrosAbertos((a) => !a)}>
+            {filtrosAbertos ? "Esconder filtros" : `Filtros${nFiltros ? ` (${nFiltros})` : ""}`}
+          </Botao>
+        </div>
       </Cartao>
+
+      <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+        <div className={filtrosAbertos ? "" : "hidden lg:block"}>{painelDeFiltros}</div>
+
+        <Cartao
+          titulo={`${numero(filtrados.length)} de ${numero(lista.dados?.length ?? 0)} leads`}
+          semPadding
+        >
+          {lista.aCarregar && !lista.dados ? (
+            <ACarregar>A varrer alvos…</ACarregar>
+          ) : !filtrados.length ? (
+            <Vazio>Nenhum lead corresponde a estes filtros.</Vazio>
+          ) : (
+            <>
+              <ul className="divide-y divide-borda/60">
+                {filtrados.slice(0, quantos).map((l) => (
+                  <li key={l.id} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold leading-snug">{l.businessName}</p>
+                        <p className="mt-0.5 text-xs text-suave">
+                          {l.city} · {l.niche}
+                        </p>
+                        <p className="mt-1 font-mono text-xs text-suave">
+                          {l.whatsapp ?? l.phone ?? l.email ?? "sem contacto"}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {l.whatsapp && <Selo tom="bom">WhatsApp</Selo>}
+                          {!l.whatsapp && l.phone && <Selo>telefone</Selo>}
+                          {l.email && <Selo>email</Selo>}
+                          {l.website && <Selo>site</Selo>}
+                          {l.linkedinUrl && <Selo>LinkedIn</Selo>}
+                          {l.lastContactedAt ? (
+                            <Selo tom="marca">falámos em {data(l.lastContactedAt)}</Selo>
+                          ) : (
+                            <Selo tom="aviso">por contactar</Selo>
+                          )}
+                        </div>
+                        {l.bottleneck && (
+                          <p className="mt-2 text-xs leading-relaxed text-suave">{l.bottleneck}</p>
+                        )}
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <Selo tom={l.tier === "A" ? "marca" : "neutro"}>
+                          {l.score} · {l.tier}
+                        </Selo>
+                        <Botao pequeno onClick={() => definirAberto(l)}>
+                          Ver copy
+                        </Botao>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {filtrados.length > quantos && (
+                <div className="border-t border-borda p-4 text-center">
+                  <Botao variante="contorno" onClick={() => definirQuantos((q) => q + 100)}>
+                    Mostrar mais {numero(Math.min(100, filtrados.length - quantos))}
+                  </Botao>
+                </div>
+              )}
+            </>
+          )}
+        </Cartao>
+      </div>
+
+      {aberto && <Copy lead={aberto} aoFechar={() => definirAberto(null)} />}
     </div>
   );
 }
