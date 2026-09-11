@@ -240,7 +240,8 @@ export function Atividade() {
                     <Selo>{a.agent}</Selo>
                   </div>
                   {a.detail && <p className="mt-0.5 text-xs text-suave">{a.detail}</p>}
-                  {a.createdAt && <p className="text-xs text-tenue">{quandoFoi(a.createdAt)}</p>}
+                  {a.businessName && <p className="text-xs text-marca">{a.businessName}</p>}
+                  <p className="text-xs text-tenue">{quandoFoi(a.timestamp)}</p>
                 </li>
               ))}
             </ul>

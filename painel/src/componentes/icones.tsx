@@ -218,3 +218,118 @@ export const Microfone = (p: Props) => (
     <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v4M8.5 21.5h7" />
   </Svg>
 );
+
+/* ---------------------------------------------- os ícones de cada setor */
+
+export const Estetoscopio = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4.5 3v5a4.5 4.5 0 0 0 9 0V3" />
+    <path d="M2.5 3h4M11.5 3h4M9 12.5v2a5.5 5.5 0 0 0 11 0v-1" />
+    <circle cx="20" cy="10" r="2" />
+  </Svg>
+);
+export const Coracao = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3.5 13H7l1.5-3 3 6 2-4.5 1.5 1.5h5.5" />
+    <path d="M20.8 8.6a4.7 4.7 0 0 0-8.8-2.3 4.7 4.7 0 0 0-8.8 2.3" />
+  </Svg>
+);
+export const Actividade = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3 12h3.5l2-6 3.5 12 2.5-8 1.5 2H21" />
+  </Svg>
+);
+export const Navio = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2 19c1.5 0 2.5 1 4 1s2.5-1 4-1 2.5 1 4 1 2.5-1 4-1" />
+    <path d="M4 15.5 5.5 10h13L20 15.5" />
+    <path d="M12 4v6M9 7h6M12 10v5.5" />
+  </Svg>
+);
+export const Ancora = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="4.5" r="2" />
+    <path d="M12 6.5V21M8 10h8M4 15a8 8 0 0 0 16 0" />
+  </Svg>
+);
+export const Chama = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 2.5c3 4 5.5 6 5.5 10a5.5 5.5 0 0 1-11 0c0-2 1-3.5 2.5-5 .3 1.5 1 2.2 1.8 2.5-.2-3 .6-5.5 1.2-7.5z" />
+  </Svg>
+);
+export const Martelo = (p: Props) => (
+  <Svg {...p}>
+    <path d="m14.5 6.5 3-3 4 4-3 3z" />
+    <path d="m15.5 9.5-9 9a2.1 2.1 0 0 1-3-3l9-9" />
+  </Svg>
+);
+export const Balao = (p: Props) => (
+  <Svg {...p}>
+    <path d="M10 2.5v6L4.5 18a2.5 2.5 0 0 0 2.2 3.5h10.6A2.5 2.5 0 0 0 19.5 18L14 8.5v-6" />
+    <path d="M8.5 2.5h7M7.5 14h9" />
+  </Svg>
+);
+export const Montanha = (p: Props) => (
+  <Svg {...p}>
+    <path d="m3 19 6.5-11 3.5 6 2-3.5L21 19z" />
+  </Svg>
+);
+export const Pergaminho = (p: Props) => (
+  <Svg {...p}>
+    <path d="M5 4.5h11a2 2 0 0 1 2 2v11a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2V6a1.5 1.5 0 0 1 1-1.5z" />
+    <path d="M8 9h7M8 13h5" />
+  </Svg>
+);
+export const Reciclar = (p: Props) => (
+  <Svg {...p}>
+    <path d="m7 19-2.5-4 3.5-2M17 19l2.5-4-3.5-2M12 3.5 9.5 8h5z" />
+    <path d="M7 19h10M9.5 8 6 14M14.5 8 18 14" />
+  </Svg>
+);
+export const Capacete = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 16.5h19M4.5 16.5V13a7.5 7.5 0 0 1 15 0v3.5" />
+    <path d="M9.5 6.2V4a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 4v2.2" />
+  </Svg>
+);
+export const Armazem = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 9 12 4.5 21.5 9v12h-19z" />
+    <path d="M7 21v-7h10v7M7 17h10" />
+  </Svg>
+);
+export const Camiao = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 6.5h10v10h-10zM12.5 10h4l3 3v3.5h-7z" />
+    <circle cx="6.5" cy="18.5" r="1.8" />
+    <circle cx="16.5" cy="18.5" r="1.8" />
+  </Svg>
+);
+export const Chave = (p: Props) => (
+  <Svg {...p}>
+    <path d="M14.5 3a5 5 0 0 0-4.3 7.6L3 17.8 6.2 21l7.2-7.2A5 5 0 1 0 14.5 3z" />
+  </Svg>
+);
+export const Talher = (p: Props) => (
+  <Svg {...p}>
+    <path d="M6 2.5v8a2.5 2.5 0 0 0 5 0v-8M8.5 10.5V21.5" />
+    <path d="M17.5 2.5c-1.5 1.5-2 3.5-2 5.5v3h3.5V2.5zM17.5 11v10.5" />
+  </Svg>
+);
+export const Fabrica = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 21.5V10l6 3.5V10l6 3.5V6.5h7v15z" />
+    <path d="M7 17.5h2M13 17.5h2M18 17.5h1.5" />
+  </Svg>
+);
+export const Predio = (p: Props) => (
+  <Svg {...p}>
+    <path d="M6 21.5V4.5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v17" />
+    <path d="M16 9.5h3.5a2 2 0 0 1 2 2v10M2.5 21.5h19M9.5 7h3M9.5 11h3M9.5 15h3" />
+  </Svg>
+);
+export const Halteres = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 9v6M2 10.5v3M20 9v6M22 10.5v3M7 7.5v9M17 7.5v9M7 12h10" />
+  </Svg>
+);

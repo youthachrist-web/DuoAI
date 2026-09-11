@@ -110,7 +110,9 @@ export type Actividade = {
   agent: string;
   event: string;
   detail: string | null;
-  createdAt?: string;
+  leadId: number | null;
+  businessName: string | null;
+  timestamp: string;
 };
 export const actividade = () => pedir<Actividade[]>("/agents/activity");
 

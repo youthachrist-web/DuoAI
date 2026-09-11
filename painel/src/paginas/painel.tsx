@@ -65,33 +65,79 @@ function Trajetoria({ dias }: { dias: api.DiaDeReceita[] }) {
   );
 }
 
-/** As janelas por setor, em hora de Brasília. Verde é janela aberta agora. */
-function Janelas() {
+/**
+ * Melhores horas de contacto, setor a setor.
+ *
+ * A razão de cada janela fica no `title`: quem passa o rato lê porquê, e quem
+ * não passa não tem o ecrã cheio de texto. No telemóvel a razão aparece por
+ * baixo, porque lá não há rato nenhum.
+ */
+function MelhoresHoras() {
   const agora = relogioDeBrasilia();
-  const linhas = SETORES.map((s) => {
-    const j = janelaDoSetor(s.nome);
-    return { setor: s, janela: j, aberta: janelaAberta(j) };
-  }).sort((a, b) => Number(b.aberta) - Number(a.aberta) || a.janela.inicioHora - b.janela.inicioHora);
-
   return (
-    <Cartao titulo="Boas horas por setor" etiqueta={`${agora} em brasília`}>
-      <p className="mb-3 text-xs text-suave">Janelas em hora de Brasília · verde = boa hora agora.</p>
-      <ul className="space-y-1.5">
-        {linhas.map(({ setor, janela, aberta }) => (
-          <li
-            key={setor.nome}
-            className={`rounded-xl border px-3 py-2 ${aberta ? "border-marca bg-marca-tenue" : "border-borda"}`}
-          >
-            <div className="flex items-baseline justify-between gap-3">
-              <span className={`text-sm font-medium ${aberta ? "text-marca" : ""}`}>{setor.curto}</span>
-              <span className="shrink-0 font-mono text-xs tabular-nums text-suave">
-                {textoDaJanela(janela)}
+    <Cartao titulo="Melhores horas de contacto" etiqueta={`${agora} em brasília`}>
+      <div className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
+        {SETORES.map((s) => {
+          const j = janelaDoSetor(s.nome);
+          const aberta = janelaAberta(j);
+          return (
+            <div key={s.nome} title={j.razao} className="flex items-center justify-between gap-2 text-sm">
+              <span className="flex min-w-0 items-center gap-2 text-suave">
+                <s.Icone className="h-4 w-4 shrink-0 text-marca/70" />
+                <span className="truncate">{s.curto}</span>
+              </span>
+              <span
+                className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-xs tabular-nums ${
+                  aberta ? "bg-marca/10 font-semibold text-marca" : "text-suave"
+                }`}
+              >
+                {textoDaJanela(j)}
               </span>
             </div>
-            <p className="mt-0.5 text-xs leading-relaxed text-suave">{janela.razao}</p>
-          </li>
-        ))}
-      </ul>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[11px] text-suave">
+        Janelas em hora de Brasília · verde = boa hora agora.
+      </p>
+    </Cartao>
+  );
+}
+
+/** O que os agentes fizeram, minuto a minuto. */
+function AoVivo() {
+  const { dados } = usarDados(api.actividade, { intervaloMs: 30_000 });
+  return (
+    <Cartao
+      titulo="Atividade ao vivo"
+      accao={<span className="etiqueta rounded bg-marca/10 px-1.5 py-0.5 !text-marca">auto-sync</span>}
+      semPadding
+    >
+      <div className="max-h-[260px] overflow-y-auto">
+        {!dados ? (
+          <ACarregar>Awaiting Data…</ACarregar>
+        ) : !dados.length ? (
+          <Vazio>Sem atividade registada ainda.</Vazio>
+        ) : (
+          <ul className="divide-y divide-borda/60">
+            {dados.slice(0, 8).map((a) => (
+              <li key={a.id} className="flex items-start gap-3 p-3 text-sm">
+                <span className="shrink-0 font-mono text-xs text-tenue">
+                  {new Date(a.timestamp).toLocaleTimeString("pt-BR", { hour12: false })}
+                </span>
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {a.agent} <span className="font-normal text-suave">→ {a.event}</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-suave">
+                    {a.detail} {a.businessName && <span className="text-marca/80">{a.businessName}</span>}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </Cartao>
   );
 }
@@ -239,7 +285,11 @@ export function Painel() {
         </Cartao>
       </div>
 
-      <Janelas />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <MelhoresHoras />
+        <AoVivo />
+      </div>
 
       <Cartao titulo="Cidades com mais empresas">
         {!f?.cities.length ? (
