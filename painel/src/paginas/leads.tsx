@@ -93,7 +93,7 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
     definirACarregar(true);
     try {
       const r = await api.rascunhoDeMensagem(lead.id);
-      definirTexto(r.message ?? r.mensagem ?? "");
+      definirTexto(r.message ?? "");
     } catch (e) {
       definirErro(e instanceof Error ? e.message : String(e));
     } finally {
@@ -106,7 +106,7 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
     // A janela abre antes de qualquer espera, senão o browser bloqueia-a como popup.
     const nova = window.open("", "_blank", "noopener");
     try {
-      const r = await api.linkDaConversa(lead.id);
+      const r = await api.linkDaConversa(lead.id, texto ?? undefined);
       if (r.url && nova) nova.location.href = r.url;
       else {
         nova?.close();

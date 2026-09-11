@@ -67,11 +67,11 @@ export const CIDADES = [
 
 /** Os pedidos que um lead pode fazer, e que ficam registados na ficha dele. */
 export const TIPOS_DE_PEDIDO = [
-  { valor: "saude_ocupacional", nome: "Saúde ocupacional (ASO)" },
   { valor: "exames_complementares", nome: "Exames complementares" },
   { valor: "colheita_local", nome: "Colheita no local" },
-  { valor: "agendamento_prioritario", nome: "Agendamento prioritário" },
+  { valor: "saude_ocupacional", nome: "Saúde ocupacional (ASO)" },
   { valor: "tabela_parceria", nome: "Tabela de parceria" },
+  { valor: "agendamento", nome: "Agendamento prioritário" },
 ] as const;
 
 /** Os gargalos que a análise atribui a cada lead. */

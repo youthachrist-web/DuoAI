@@ -163,11 +163,14 @@ export const leads = (limite = 1000) => pedir<Lead[]>(`/leads?limit=${limite}`);
 export const ultimaExportacao = () => pedir<{ at: string | null }>("/leads/last-export");
 
 export const rascunhoDeMensagem = (id: number) =>
-  post<{ message?: string; mensagem?: string }>(`/leads/${id}/draft-message`);
+  post<{ message: string; ai?: boolean }>(`/leads/${id}/draft-message`);
+
 export const rascunhoDeEmail = (id: number) =>
-  post<{ subject?: string; body?: string; assunto?: string; corpo?: string }>(`/leads/${id}/draft-email`);
-export const enviarEmail = (id: number, corpo?: unknown) =>
-  post<{ sent?: boolean; error?: string }>(`/leads/${id}/send-email`, corpo);
+  post<{ subject: string; body: string; ai?: boolean }>(`/leads/${id}/draft-email`);
+
+export const enviarEmail = (id: number, dados: { subject: string; body: string; email?: string }) =>
+  post<{ sent?: boolean; to?: string; error?: string }>(`/leads/${id}/send-email`, dados);
+
 export const procurarDecisor = (id: number) =>
   post<{ decisor?: string | null; detail?: string }>(`/leads/${id}/decisor`);
 
@@ -188,6 +191,8 @@ export const estadoWhatsApp = () => pedir<EstadoWhatsApp>("/whatsapp/status");
 export type CodigoQr = { state: string; image?: string; expiraEmMs?: number; detail?: string };
 export const codigoQr = () => pedir<CodigoQr>("/whatsapp/qr");
 
+export type Decisor = { nome: string; cargo?: string | null };
+
 export type ItemDaFila = {
   id: number;
   empresa: string;
@@ -195,8 +200,8 @@ export type ItemDaFila = {
   setor: string;
   pontuacao: number;
   numero: string;
-  numeroFormatado: string;
-  decisor: string | null;
+  numeroFormatado: string | null;
+  decisor: Decisor | null;
   mensagem: string;
   url: string;
 };
@@ -210,16 +215,24 @@ export type Fila = {
 };
 export const fila = (limite = 25) => pedir<Fila>(`/control/fila-whatsapp?limite=${limite}`);
 
-export const linkDaConversa = (id: number) =>
-  pedir<{ url: string; mensagem?: string }>(`/leads/${id}/whatsapp-link`);
-export const enviarWhatsApp = (id: number) =>
-  post<{ sent: boolean; url?: string; usarLink?: boolean; detail?: string }>(`/leads/${id}/whatsapp-send`);
+/** O link da conversa, já com a mensagem que está no ecrã. */
+export const linkDaConversa = (id: number, mensagem?: string) =>
+  post<{ url: string }>(`/leads/${id}/whatsapp-link`, { message: mensagem });
+
+/**
+ * Tenta enviar por API. Se o WhatsApp recusar, o servidor devolve na mesma um
+ * `url` para abrir a conversa — a copy fica escrita e o envio é à mão.
+ */
+export const enviarWhatsApp = (id: number, mensagem?: string) =>
+  post<{ sent?: boolean; url?: string; aviso?: string; messageId?: string; message?: string }>(
+    `/leads/${id}/whatsapp-send`,
+    { message: mensagem },
+  );
 
 /* --------------------------------------------------------- os interruptores */
 
-export const autorizarContactos = () => post<unknown>("/control/outreach");
-export const zerarContactados = () => post<unknown>("/control/reset-contacts");
-export const limparRelatorios = () => post<unknown>("/control/reset-reports");
+export const zerarContactados = () => post<ResultadoDeLimpeza>("/control/reset-contacts");
+export const limparRelatorios = () => post<ResultadoDeLimpeza>("/control/reset-reports");
 
 /* ------------------------------------------------------------ prospeção */
 
@@ -459,8 +472,20 @@ export async function exportarLeads(f: FiltrosDeExportacao): Promise<Blob> {
 }
 
 /** Regista o que o lead pediu. Fica na ficha dele e muda a copy seguinte. */
-export const registarPedido = (id: number, kind: string, nota?: string) =>
-  post<unknown>(`/leads/${id}/request`, { kind, note: nota });
+export const registarPedido = (id: number, tipo: string) =>
+  post<unknown>(`/leads/${id}/request`, { type: tipo });
+
+export type EstadoDoOutreach = { enabled: boolean; startedAt: string | null };
+export const estadoDoOutreach = () => pedir<EstadoDoOutreach>("/control/outreach");
+export const mudarOutreach = (enabled: boolean) =>
+  post<EstadoDoOutreach>("/control/outreach", { enabled });
+
+export type ResultadoDeLimpeza = {
+  leadsLimpos?: number;
+  comunicacoesRemovidas?: number;
+  followupsRemovidos?: number;
+  relatoriosRemovidos?: number;
+};
 
 /* ------------------------------------------------------------ transcrição */
 
