@@ -103,17 +103,17 @@ export function Propostas() {
           <section
             key={p.nome}
             className={`rounded-2xl border bg-cartao p-4 ${
-              p.recomendado ? "border-marca ring-1 ring-marca/30" : "border-borda"
+              p.recomendado ? "border-turquesa ring-1 ring-turquesa/30" : "border-borda"
             }`}
           >
             <div className="flex items-center justify-between gap-2">
               <h2 className="font-semibold">{p.rotulo}</h2>
-              <Selo tom={p.recomendado ? "marca" : "neutro"}>{p.etiqueta}</Selo>
+              <Selo tom={p.recomendado ? "turquesa" : "neutro"}>{p.etiqueta}</Selo>
             </div>
             <ul className="mt-3 space-y-1.5 text-sm leading-relaxed text-suave">
               {p.linhas.map((l) => (
                 <li key={l} className="flex gap-2">
-                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-marca" />
+                  <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-turquesa" />
                   {l}
                 </li>
               ))}
@@ -146,7 +146,7 @@ export function Propostas() {
                 <td className="px-4 py-3 align-top text-suave">{p.packageName ?? "—"}</td>
                 <td className="px-4 py-3 align-top tabular-nums">{dinheiro(p.totalValue)}</td>
                 <td className="px-4 py-3 align-top">
-                  <Selo tom={p.status === "closed" ? "bom" : p.status === "sent" ? "marca" : "neutro"}>
+                  <Selo tom={p.status === "closed" ? "bom" : p.status === "sent" ? "turquesa" : "neutro"}>
                     {p.status}
                   </Selo>
                 </td>

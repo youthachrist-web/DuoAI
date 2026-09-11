@@ -74,7 +74,7 @@ export class CaixaDeErro extends Component<{ children: ReactNode }, { erro: Erro
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="rounded-xl bg-marca px-4 py-2.5 text-sm font-semibold text-white hover:bg-marca-forte"
+              className="rounded-xl bg-turquesa px-4 py-2.5 text-sm font-semibold text-white hover:bg-turquesa-forte"
             >
               Tentar de novo
             </button>

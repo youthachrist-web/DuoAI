@@ -53,36 +53,56 @@ export function Metrica({
   rotulo,
   valor,
   nota,
-  marca,
+  rodape,
+  aguada,
 }: {
   rotulo: string;
   valor: ReactNode;
+  /** A pastilha ao lado do número. Só entra quando há uma comparação verdadeira. */
   nota?: ReactNode;
-  marca?: ReactNode;
+  /** A linha de baixo, com o que mudou desde ontem ou desde o mês passado. */
+  rodape?: ReactNode;
+  aguada?: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-borda bg-cartao p-5">
+    <div className="relative overflow-hidden rounded-2xl border border-borda bg-cartao">
       {/* A marca de água só existe para dar peso ao cartão; não carrega informação,
           por isso fica escondida dos leitores de ecrã. */}
-      {marca && (
-        <div aria-hidden className="pointer-events-none absolute -right-2 top-1/2 -translate-y-1/2 text-marca/10">
-          {marca}
+      {aguada && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-3 top-4 text-turquesa/[0.07]"
+        >
+          {aguada}
         </div>
       )}
-      <p className="etiqueta">{rotulo}</p>
-      <p className="mt-2 text-[34px] font-bold leading-none tabular-nums tracking-tight">{valor}</p>
-      {/* Sem percentagens inventadas: a nota só aparece quando há mesmo algo a dizer. */}
-      {nota && <div className="mt-2.5 text-xs text-suave">{nota}</div>}
+      <div className="p-5">
+        <p className="etiqueta">{rotulo}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-2.5">
+          <p className="numero text-[30px] leading-none">{valor}</p>
+          {nota}
+        </div>
+      </div>
+      {rodape && (
+        <div className="border-t border-borda px-5 py-2.5 text-xs text-suave">{rodape}</div>
+      )}
     </div>
   );
 }
 
-export function Selo({ children, tom = "neutro" }: { children: ReactNode; tom?: "neutro" | "bom" | "aviso" | "marca" }) {
+export function Selo({
+  children,
+  tom = "neutro",
+}: {
+  children: ReactNode;
+  tom?: "neutro" | "bom" | "aviso" | "turquesa" | "lima";
+}) {
   const cores = {
     neutro: "bg-fundo text-suave",
     bom: "bg-bom/10 text-bom",
     aviso: "bg-aviso/10 text-aviso",
-    marca: "bg-marca-tenue text-marca",
+    turquesa: "bg-turquesa-tenue text-turquesa-forte",
+    lima: "bg-lima-tenue text-lima-forte",
   }[tom];
   return <span className={`inline-flex rounded-md px-2 py-0.5 text-xs font-medium ${cores}`}>{children}</span>;
 }
@@ -117,7 +137,7 @@ export function Botao({
 }) {
   const tamanho = pequeno ? "px-2.5 py-1.5 text-xs" : "px-4 py-2.5 text-sm";
   const estilo = {
-    principal: "bg-marca text-white hover:bg-marca-forte",
+    principal: "bg-turquesa text-white hover:bg-turquesa-forte",
     contorno: "border border-borda bg-cartao hover:bg-fundo",
     perigo: "border border-alerta/40 text-alerta hover:bg-alerta/8",
   }[variante];
@@ -134,7 +154,7 @@ export function Botao({
 }
 
 export const campo =
-  "w-full rounded-xl border border-borda bg-cartao px-3 py-2.5 text-sm text-texto outline-none focus:border-marca";
+  "w-full rounded-xl border border-borda bg-cartao px-3 py-2.5 text-sm text-texto outline-none focus:border-turquesa";
 
 /* ------------------------------------------------------------ mensagens */
 
@@ -180,7 +200,7 @@ export function Barra({ valor, maximo }: { valor: number; maximo: number }) {
   const pct = maximo > 0 ? Math.min(100, (valor / maximo) * 100) : 0;
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-fundo">
-      <div className="h-full rounded-full bg-marca transition-[width]" style={{ width: `${pct}%` }} />
+      <div className="h-full rounded-full bg-turquesa transition-[width]" style={{ width: `${pct}%` }} />
     </div>
   );
 }

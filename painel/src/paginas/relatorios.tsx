@@ -88,7 +88,7 @@ export function Relatorios() {
                   onClick={() => definirEscolhido(r.id)}
                   className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
                     activo?.id === r.id
-                      ? "border-marca bg-marca-tenue text-marca"
+                      ? "border-turquesa bg-turquesa-tenue text-turquesa"
                       : "border-borda bg-cartao text-suave hover:bg-fundo"
                   }`}
                 >

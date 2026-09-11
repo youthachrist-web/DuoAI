@@ -30,7 +30,7 @@ function Decisor({ lead }: { lead: api.Lead }) {
     }
   }
 
-  if (nome) return <Selo tom="marca">{nome}</Selo>;
+  if (nome) return <Selo tom="turquesa">{nome}</Selo>;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -113,7 +113,7 @@ export function Atividade() {
       <Cabecalho
         titulo="Atividade"
         descricao="O que o sistema fez, e de onde vieram os leads."
-        accao={<span className="etiqueta !text-marca">ao vivo</span>}
+        accao={<span className="etiqueta !text-turquesa">ao vivo</span>}
       />
 
       <Cartao titulo="Origem dos leads" etiqueta="de onde vieram · quem decide">
@@ -137,7 +137,7 @@ export function Atividade() {
               type="button"
               onClick={() => definirOrigem(v)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                origem === v ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+                origem === v ? "border-turquesa bg-turquesa-tenue text-turquesa" : "border-borda text-suave"
               }`}
             >
               {nome}
@@ -150,7 +150,7 @@ export function Atividade() {
             type="button"
             onClick={() => definirGargalo("")}
             className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-              !gargalo ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+              !gargalo ? "border-turquesa bg-turquesa-tenue text-turquesa" : "border-borda text-suave"
             }`}
           >
             Qualquer gargalo
@@ -161,7 +161,7 @@ export function Atividade() {
               type="button"
               onClick={() => definirGargalo(g)}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                gargalo === g ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"
+                gargalo === g ? "border-turquesa bg-turquesa-tenue text-turquesa" : "border-borda text-suave"
               }`}
             >
               {GARGALOS[g] ?? g}
@@ -217,7 +217,7 @@ export function Atividade() {
                 type="button"
                 onClick={() => definirAba(a)}
                 className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
-                  aba === a ? "bg-marca-tenue text-marca" : "text-suave hover:bg-fundo"
+                  aba === a ? "bg-turquesa-tenue text-turquesa" : "text-suave hover:bg-fundo"
                 }`}
               >
                 {a === "sistema" ? "Sistema" : "Envios"}
@@ -240,7 +240,7 @@ export function Atividade() {
                     <Selo>{a.agent}</Selo>
                   </div>
                   {a.detail && <p className="mt-0.5 text-xs text-suave">{a.detail}</p>}
-                  {a.businessName && <p className="text-xs text-marca">{a.businessName}</p>}
+                  {a.businessName && <p className="text-xs text-turquesa">{a.businessName}</p>}
                   <p className="text-xs text-tenue">{quandoFoi(a.timestamp)}</p>
                 </li>
               ))}

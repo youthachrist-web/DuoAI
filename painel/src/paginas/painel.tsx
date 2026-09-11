@@ -51,8 +51,8 @@ function Trajetoria({ dias }: { dias: api.DiaDeReceita[] }) {
   return (
     <>
       <svg viewBox={`0 0 ${L} ${A}`} className="h-[90px] w-full" preserveAspectRatio="none" aria-hidden>
-        <path d={area} className="fill-marca/10" />
-        <path d={linha} className="stroke-marca" fill="none" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+        <path d={area} className="fill-turquesa/10" />
+        <path d={linha} className="stroke-turquesa" fill="none" strokeWidth={2} vectorEffect="non-scaling-stroke" />
       </svg>
       <div className="mt-2 flex items-baseline justify-between text-xs text-suave">
         <span>{dias[0]?.date}</span>
@@ -83,12 +83,12 @@ function MelhoresHoras() {
           return (
             <div key={s.nome} title={j.razao} className="flex items-center justify-between gap-2 text-sm">
               <span className="flex min-w-0 items-center gap-2 text-suave">
-                <s.Icone className="h-4 w-4 shrink-0 text-marca/70" />
+                <s.Icone className="h-4 w-4 shrink-0 text-turquesa/70" />
                 <span className="truncate">{s.curto}</span>
               </span>
               <span
                 className={`shrink-0 rounded px-1.5 py-0.5 font-mono text-xs tabular-nums ${
-                  aberta ? "bg-marca/10 font-semibold text-marca" : "text-suave"
+                  aberta ? "bg-turquesa/10 font-semibold text-turquesa" : "text-suave"
                 }`}
               >
                 {textoDaJanela(j)}
@@ -110,7 +110,7 @@ function AoVivo() {
   return (
     <Cartao
       titulo="Atividade ao vivo"
-      accao={<span className="etiqueta rounded bg-marca/10 px-1.5 py-0.5 !text-marca">auto-sync</span>}
+      accao={<span className="etiqueta rounded bg-turquesa/10 px-1.5 py-0.5 !text-turquesa">auto-sync</span>}
       semPadding
     >
       <div className="max-h-[260px] overflow-y-auto">
@@ -130,7 +130,7 @@ function AoVivo() {
                     {a.agent} <span className="font-normal text-suave">→ {a.event}</span>
                   </p>
                   <p className="mt-0.5 text-xs text-suave">
-                    {a.detail} {a.businessName && <span className="text-marca/80">{a.businessName}</span>}
+                    {a.detail} {a.businessName && <span className="text-turquesa/80">{a.businessName}</span>}
                   </p>
                 </div>
               </li>
@@ -157,38 +157,50 @@ export function Painel() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metrica
           rotulo="Receita do mês"
           valor={dinheiro(r?.revenueMonth)}
-          nota={r ? `Hoje: ${dinheiro(r.revenueToday)}` : undefined}
-          marca={<I.Dinheiro className="h-24 w-24" />}
+          rodape={r ? <>Hoje: <b className="text-texto">{dinheiro(r.revenueToday)}</b></> : undefined}
+          aguada={<I.Dinheiro className="h-20 w-20" />}
         />
         <Metrica
           rotulo="Leads na base"
           valor={numero(r?.totalLeads ?? f?.total)}
-          nota={
+          nota={f ? <Selo tom="lima">+{numero(f.today)} hoje</Selo> : undefined}
+          rodape={
             r ? (
-              <span className="flex flex-wrap gap-1.5">
-                <Selo tom="marca">Tier A: {numero(r.tierALeads)}</Selo>
-                <Selo>Tier B: {numero(r.tierBLeads)}</Selo>
-                {f && <Selo>Hoje: {numero(f.today)}</Selo>}
-              </span>
+              <>
+                Tier A: <b className="text-texto">{numero(r.tierALeads)}</b> · Tier B:{" "}
+                <b className="text-texto">{numero(r.tierBLeads)}</b>
+              </>
             ) : undefined
           }
-          marca={<I.Pessoas className="h-24 w-24" />}
+          aguada={<I.Pessoas className="h-20 w-20" />}
         />
         <Metrica
           rotulo="Contratos em curso"
           valor={numero(r?.contractsSent)}
-          nota={r ? `${numero(r.paymentsDone)} pagos · ${numero(r.proposalsSent)} propostas enviadas` : undefined}
-          marca={<I.Contrato className="h-24 w-24" />}
+          rodape={
+            r ? (
+              <>
+                {numero(r.paymentsDone)} pagos · {numero(r.proposalsSent)} propostas enviadas
+              </>
+            ) : undefined
+          }
+          aguada={<I.Contrato className="h-20 w-20" />}
         />
         <Metrica
           rotulo="Taxa de conversão"
           valor={`${(r?.conversionRate ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`}
-          nota={r ? `${numero(r.responses)} respostas · ${numero(r.negotiations)} em negociação` : undefined}
-          marca={<I.Alvo className="h-24 w-24" />}
+          rodape={
+            r ? (
+              <>
+                {numero(r.responses)} respostas · {numero(r.negotiations)} em negociação
+              </>
+            ) : undefined
+          }
+          aguada={<I.Alvo className="h-20 w-20" />}
         />
       </div>
 

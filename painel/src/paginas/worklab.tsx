@@ -51,9 +51,9 @@ function Paciente({ m, indice }: { m: api.MensagemWorklab; indice: number }) {
         <span className="font-semibold">{m.name || "(sem nome)"}</span>
         {m.phone && <span className="font-mono text-xs text-suave">{m.phone}</span>}
         {m.kind === "confirmacao" ? (
-          <Selo tom="marca">Confirmação</Selo>
+          <Selo tom="turquesa">Confirmação</Selo>
         ) : (
-          <Selo tom={m.track === "alerta" ? "aviso" : "marca"}>
+          <Selo tom={m.track === "alerta" ? "aviso" : "turquesa"}>
             {m.track === "alerta" ? "Alerta" : "Rotina"}
           </Selo>
         )}
@@ -77,7 +77,7 @@ function Paciente({ m, indice }: { m: api.MensagemWorklab; indice: number }) {
           rel="noopener noreferrer"
           onClick={() => url && definirAberto(true)}
           className={`inline-flex items-center justify-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold ${
-            aberto ? "border border-borda text-suave" : "bg-marca text-white hover:bg-marca-forte"
+            aberto ? "border border-borda text-suave" : "bg-turquesa text-white hover:bg-turquesa-forte"
           } ${url ? "" : "pointer-events-none opacity-50"}`}
         >
           <I.Conversa className="h-4 w-4" />
@@ -132,7 +132,7 @@ export function Worklab() {
               type="button"
               onClick={() => definirTipo(t.id)}
               className={`rounded-xl border p-3 text-left transition-colors ${
-                tipo === t.id ? "border-marca bg-marca-tenue" : "border-borda hover:bg-fundo"
+                tipo === t.id ? "border-turquesa bg-turquesa-tenue" : "border-borda hover:bg-fundo"
               }`}
             >
               <p className="text-sm font-semibold">{t.rotulo}</p>
@@ -218,8 +218,8 @@ export function Worklab() {
               <p className="mt-1 text-2xl font-bold tabular-nums">{numero(base.total)}</p>
             </div>
             <div className="rounded-2xl border border-borda bg-cartao p-4">
-              <p className="etiqueta !text-marca">Prontos</p>
-              <p className="mt-1 text-2xl font-bold tabular-nums text-marca">{numero(base.sendable)}</p>
+              <p className="etiqueta !text-turquesa">Prontos</p>
+              <p className="mt-1 text-2xl font-bold tabular-nums text-turquesa">{numero(base.sendable)}</p>
             </div>
             <div className="rounded-2xl border border-borda bg-cartao p-4">
               <p className="etiqueta !text-alerta">Bloqueados</p>

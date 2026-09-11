@@ -36,7 +36,7 @@ export function SeloWhatsApp() {
           : `WhatsApp desligado — ${dados.detail ?? "lê o QR no Painel Diário"}`;
 
   const cor = aEnviarPorApi
-    ? "border-marca/40 bg-marca-tenue text-marca"
+    ? "border-turquesa/40 bg-turquesa-tenue text-turquesa"
     : aCarregar || !dados
       ? "border-borda bg-fundo text-suave"
       : "border-aviso/40 bg-aviso-tenue text-aviso";

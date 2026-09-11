@@ -44,7 +44,7 @@ function ListaDeMarcas({
   return (
     <>
       <div className="mb-1.5 flex gap-3 text-xs">
-        <button type="button" className="text-marca" onClick={() => aoMudar(opcoes.map((o) => o.value))}>
+        <button type="button" className="text-turquesa" onClick={() => aoMudar(opcoes.map((o) => o.value))}>
           selecionar tudo
         </button>
         <button type="button" className="text-suave" onClick={() => aoMudar([])}>
@@ -56,7 +56,7 @@ function ListaDeMarcas({
           <label key={o.value} className="flex cursor-pointer items-center gap-2 text-sm">
             <input
               type="checkbox"
-              className="h-4 w-4 shrink-0 accent-marca"
+              className="h-4 w-4 shrink-0 accent-turquesa"
               checked={escolhidas.includes(o.value)}
               onChange={(e) =>
                 aoMudar(
@@ -157,7 +157,7 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
         </header>
 
         <div className="space-y-4 p-4">
-          <div className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${boaHora ? "border-marca bg-marca-tenue text-marca" : "border-borda text-suave"}`}>
+          <div className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${boaHora ? "border-turquesa bg-turquesa-tenue text-turquesa" : "border-borda text-suave"}`}>
             <strong>{textoDaJanela(janela)}</strong> · {janela.razao}
             {boaHora && " É boa hora agora."}
           </div>
@@ -358,7 +358,7 @@ export function Leads() {
           <label key={v} className="flex cursor-pointer items-center gap-2 py-0.5 text-sm">
             <input
               type="checkbox"
-              className="h-4 w-4 accent-marca"
+              className="h-4 w-4 accent-turquesa"
               checked={contacto.includes(v)}
               onChange={(e) =>
                 definirContacto(e.target.checked ? [...contacto, v] : contacto.filter((c) => c !== v))
@@ -370,7 +370,7 @@ export function Leads() {
         <label className="mt-1 flex cursor-pointer items-center gap-2 py-0.5 text-sm">
           <input
             type="checkbox"
-            className="h-4 w-4 accent-marca"
+            className="h-4 w-4 accent-turquesa"
             checked={naoContactados}
             onChange={(e) => definirNaoContactados(e.target.checked)}
           />
@@ -394,7 +394,7 @@ export function Leads() {
           step={5}
           value={scoreMin}
           onChange={(e) => definirScoreMin(Number(e.target.value))}
-          className="w-full accent-marca"
+          className="w-full accent-turquesa"
         />
         <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
           {([[0, "Qualquer score"], [60, "60 ou mais"], [80, "80 ou mais — só os mais quentes"]] as const).map(
@@ -403,7 +403,7 @@ export function Leads() {
                 key={v}
                 type="button"
                 onClick={() => definirScoreMin(v)}
-                className={scoreMin === v ? "font-semibold text-marca" : "text-suave"}
+                className={scoreMin === v ? "font-semibold text-turquesa" : "text-suave"}
               >
                 {nome}
               </button>
@@ -510,7 +510,7 @@ export function Leads() {
                             </Selo>
                           ))}
                           {l.lastContactedAt ? (
-                            <Selo tom="marca">falámos em {data(l.lastContactedAt)}</Selo>
+                            <Selo tom="turquesa">falámos em {data(l.lastContactedAt)}</Selo>
                           ) : (
                             <Selo tom="aviso">por contactar</Selo>
                           )}
@@ -520,7 +520,7 @@ export function Leads() {
                         )}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
-                        <Selo tom={l.tier === "A" ? "marca" : "neutro"}>
+                        <Selo tom={l.tier === "A" ? "turquesa" : "neutro"}>
                           {l.score} · {l.tier}
                         </Selo>
                         <Botao pequeno onClick={() => definirAberto(l)}>

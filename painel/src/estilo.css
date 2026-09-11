@@ -1,41 +1,67 @@
 @import "tailwindcss";
 
-/* Os nomes aqui geram as classes: --color-marca dá bg-marca, text-marca, border-marca.
-   É a forma do Tailwind v4 — a sintaxe bg-[--color-marca] da v3 não gera nada. */
-@theme {
-  --color-marca: #0E8577;
-  --color-marca-forte: #0A6D62;
-  --color-marca-tenue: #E6F4F1;
-  --color-fundo: #F4F6F7;
-  --color-cartao: #FFFFFF;
-  --color-borda: #E5E8EB;
-  --color-texto: #12171D;
-  --color-suave: #6B7480;
-  --color-tenue: #98A1AC;
-  --color-alerta: #C0392B;
-  --color-aviso: #B45309;
-  --color-aviso-tenue: #FDF3E3;
-  --color-bom: #0E7A4B;
+/* A Outfit é o mais perto que há, sem custo, da geométrica pesada da marca:
+   mesma construção circular e as mesmas terminações direitas. Serve os títulos,
+   os números e o logótipo; o corpo fica em fonte de sistema, que lê melhor em
+   linhas longas e não faz esperar por nada. */
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap");
 
+@theme {
+  /* As duas cores da FourLife, tiradas do logótipo. */
+  --color-turquesa: #3FBDD6;
+  --color-turquesa-forte: #2AA5BE;
+  --color-turquesa-tenue: #E4F6FA;
+  --color-lima: #A4CE39;
+  --color-lima-forte: #8DB52C;
+  --color-lima-tenue: #F1F8E1;
+
+  /* A barra lateral escura dos painéis de referência. */
+  --color-barra: #0E2A2C;
+  --color-barra-clara: #17403F;
+  --color-barra-texto: #CFE3E4;
+  --color-barra-suave: #7FA0A2;
+
+  --color-fundo: #F3F6F6;
+  --color-cartao: #FFFFFF;
+  --color-borda: #E6EBEB;
+  --color-texto: #0F1A1C;
+  --color-suave: #61757A;
+  --color-tenue: #93A5A9;
+
+  --color-alerta: #D2463A;
+  --color-aviso: #C07A12;
+  --color-aviso-tenue: #FDF4E4;
+  --color-bom: #2E9E54;
+
+  --font-titulo: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* O tema escuro redefine as mesmas variáveis. As classes não mudam. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-marca: #2DD4BF;
-    --color-marca-forte: #5EEAD4;
-    --color-marca-tenue: #0C2E2B;
-    --color-fundo: #0C1014;
-    --color-cartao: #151B21;
-    --color-borda: #262E37;
-    --color-texto: #E8EDF2;
-    --color-suave: #8E99A6;
-    --color-tenue: #6B7480;
-    --color-alerta: #FF8A7A;
-    --color-aviso: #E9B44C;
+    --color-turquesa: #5BD3EA;
+    --color-turquesa-forte: #8AE4F5;
+    --color-turquesa-tenue: #0C2B31;
+    --color-lima: #B8DE55;
+    --color-lima-forte: #CBE97C;
+    --color-lima-tenue: #1B2710;
+
+    --color-barra: #091B1C;
+    --color-barra-clara: #12312F;
+    --color-barra-texto: #D6E7E8;
+    --color-barra-suave: #7A9698;
+
+    --color-fundo: #0A1314;
+    --color-cartao: #111F21;
+    --color-borda: #1E3234;
+    --color-texto: #E7F0F1;
+    --color-suave: #8EA3A6;
+    --color-tenue: #6B8083;
+
+    --color-alerta: #FF8B7E;
+    --color-aviso: #E8B451;
     --color-aviso-tenue: #2A2113;
-    --color-bom: #4ADE80;
+    --color-bom: #5FD187;
   }
 }
 
@@ -53,20 +79,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* A etiqueta em maiúsculas espaçadas que o painel usa para rótulos de métricas,
-   colunas de tabela e estados. Aparece em todo o lado, por isso vive aqui. */
+h1,
+h2,
+h3,
+.titulo {
+  font-family: var(--font-titulo);
+  letter-spacing: -0.02em;
+}
+
+/* Os números grandes dos cartões: geométricos, apertados e com todos os
+   algarismos da mesma largura, para não dançarem quando o valor muda. */
+.numero {
+  font-family: var(--font-titulo);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* A etiqueta em maiúsculas espaçadas dos rótulos de métrica e das colunas. */
 .etiqueta {
-  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-suave);
 }
 
-/* As barras de deslocamento horizontais da navegação e das tabelas ficam
-   escondidas: no telemóvel não se usam, e no computador a barra por cima do
-   conteúdo corta a última linha. */
 .sem-barra {
   scrollbar-width: none;
 }

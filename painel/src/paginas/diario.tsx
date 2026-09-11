@@ -31,8 +31,8 @@ function LigarWhatsApp() {
   const estado = usarDados(api.estadoWhatsApp, { intervaloMs: 20_000 });
   if (estado.dados?.state === "open") {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-marca/30 bg-marca-tenue px-3 py-2.5 text-xs">
-        <I.Conversa className="h-4 w-4 shrink-0 text-marca" />
+      <div className="flex items-center gap-2 rounded-xl border border-turquesa/30 bg-turquesa-tenue px-3 py-2.5 text-xs">
+        <I.Conversa className="h-4 w-4 shrink-0 text-turquesa" />
         <span>
           WhatsApp ligado{estado.dados.instancia ? ` (${estado.dados.instancia})` : ""} — o disparo envia por API.
         </span>
@@ -132,7 +132,7 @@ function Interruptores({ aoMudar }: { aoMudar: () => void }) {
   async function limpar(qual: "contacts" | "reports") {
     const pergunta =
       qual === "contacts"
-        ? "Isto apaga a marca de «já contactado» em todos os leads. Eles voltam à fila e podem receber a mesma mensagem outra vez. Continuar?"
+        ? "Isto apaga a turquesa de «já contactado» em todos os leads. Eles voltam à fila e podem receber a mesma mensagem outra vez. Continuar?"
         : "Isto apaga os relatórios já gerados. Continuar?";
     if (!window.confirm(pergunta)) return;
     definirErro(null);
@@ -157,16 +157,16 @@ function Interruptores({ aoMudar }: { aoMudar: () => void }) {
   }
 
   return (
-    <Cartao className={ligado ? "border-marca/50" : ""}>
+    <Cartao className={ligado ? "border-turquesa/50" : ""}>
       <LigarWhatsApp />
 
       <div className="mt-3 flex items-start gap-3">
         <div
           className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl border ${
-            ligado ? "border-marca/30 bg-marca-tenue" : "border-borda bg-fundo"
+            ligado ? "border-turquesa/30 bg-turquesa-tenue" : "border-borda bg-fundo"
           }`}
         >
-          <I.Escudo className={`h-4 w-4 ${ligado ? "text-marca" : "text-suave"}`} />
+          <I.Escudo className={`h-4 w-4 ${ligado ? "text-turquesa" : "text-suave"}`} />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">
@@ -307,7 +307,7 @@ function FilaDeDisparo() {
       {f && (
         <div className="mt-3 space-y-1">
           <div className="h-1.5 overflow-hidden rounded-full bg-fundo">
-            <div className="h-full bg-marca/70 transition-all" style={{ width: `${progresso}%` }} />
+            <div className="h-full bg-turquesa/70 transition-all" style={{ width: `${progresso}%` }} />
           </div>
           <p className="font-mono text-[11px] text-suave">
             {f.estado.enviadosHoje} de {f.estado.tecto} hoje · {numero(f.elegiveis)} elegíveis na base
@@ -501,10 +501,10 @@ function FichaDoLead({ lead, aoMudar }: { lead: api.Lead; aoMudar: () => void })
                 {s.texto}
               </Selo>
             ))}
-            {lead.ultimoWhatsApp && <Selo tom="marca">Contactado</Selo>}
+            {lead.ultimoWhatsApp && <Selo tom="turquesa">Contactado</Selo>}
           </div>
         </div>
-        <Selo tom={lead.tier === "A" ? "marca" : "neutro"}>
+        <Selo tom={lead.tier === "A" ? "turquesa" : "neutro"}>
           {lead.score} · {lead.tier}
         </Selo>
       </div>
@@ -628,7 +628,7 @@ export function Diario() {
           variante="contorno"
           pequeno
           onClick={() => definirMostrarContactados((m) => !m)}
-          className={mostrarContactados ? "!border-marca !text-marca" : ""}
+          className={mostrarContactados ? "!border-turquesa !text-turquesa" : ""}
         >
           {mostrarContactados ? "A mostrar contactados" : "Mostrar já contactados"}
           {jaContactados > 0 && <span className="font-mono opacity-70">{jaContactados}</span>}

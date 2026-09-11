@@ -83,7 +83,7 @@ export function Assistente() {
                 <li key={c.id} className="flex items-center justify-between gap-3 text-sm">
                   <button
                     type="button"
-                    className="min-w-0 flex-1 truncate text-left hover:text-marca"
+                    className="min-w-0 flex-1 truncate text-left hover:text-turquesa"
                     onClick={async () => {
                       try {
                         const m = await api.mensagensDaConversa(c.id);
@@ -138,7 +138,7 @@ export function Assistente() {
               <div key={i} className={f.role === "user" ? "flex justify-end" : "flex justify-start"}>
                 <div
                   className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                    f.role === "user" ? "bg-marca text-white" : "bg-fundo"
+                    f.role === "user" ? "bg-turquesa text-white" : "bg-fundo"
                   }`}
                 >
                   {f.content || <span className="font-mono text-tenue">a pensar…</span>}

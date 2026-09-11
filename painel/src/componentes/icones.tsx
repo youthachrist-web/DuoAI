@@ -4,7 +4,7 @@
  * Sem biblioteca de propósito: são vinte e poucos traços e uma dependência a
  * menos é uma forma a menos de o painel deixar de construir. Todos herdam a cor
  * do texto e o tamanho vem da classe, para servirem tanto num botão como numa
- * marca de água gigante atrás de um número.
+ * turquesa de água gigante atrás de um número.
  */
 import type { SVGProps } from "react";
 
@@ -200,15 +200,13 @@ export const Estrela = (p: Props) => (
   </Svg>
 );
 
-export const Marca = ({ className = "h-8 w-8" }: { className?: string }) => (
+/** O quatro da FourLife: turquesa por baixo, lima na haste. */
+export const Marca = ({ className = "h-9 w-9" }: { className?: string }) => (
   <svg viewBox="0 0 40 40" className={className} aria-hidden>
-    <rect width="40" height="40" rx="11" className="fill-marca" />
-    <circle cx="12" cy="14" r="2.6" fill="white" fillOpacity="0.55" />
-    <circle cx="12" cy="26" r="2.6" fill="white" fillOpacity="0.55" />
-    <path
-      d="M20 11h4.5a9 9 0 0 1 0 18H20a1.6 1.6 0 0 1-1.6-1.6V12.6A1.6 1.6 0 0 1 20 11zm3.4 4.4v9.2a4.6 4.6 0 0 0 0-9.2z"
-      fill="white"
-    />
+    <rect width="40" height="40" rx="12" className="fill-turquesa" />
+    <path d="M22 8v13H12.5L22 8z" fill="none" stroke="white" strokeWidth="3.2" strokeLinejoin="round" />
+    <path d="M9 21h20" stroke="white" strokeWidth="3.2" strokeLinecap="round" />
+    <path d="M22 21v11" className="stroke-lima" strokeWidth="3.2" strokeLinecap="round" />
   </svg>
 );
 
@@ -331,5 +329,18 @@ export const Predio = (p: Props) => (
 export const Halteres = (p: Props) => (
   <Svg {...p}>
     <path d="M4 9v6M2 10.5v3M20 9v6M22 10.5v3M7 7.5v9M17 7.5v9M7 12h10" />
+  </Svg>
+);
+
+export const Menu = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3.5 7h17M3.5 12h17M3.5 17h17" />
+  </Svg>
+);
+
+export const Sair = (p: Props) => (
+  <Svg {...p}>
+    <path d="M14 3.5H6.5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2H14" />
+    <path d="M17 8.5 21 12l-4 3.5M21 12H9.5" />
   </Svg>
 );
