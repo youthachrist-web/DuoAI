@@ -1,5 +1,5 @@
 /**
- * Cliente da API do DuoAI.
+ * Cliente da API do painel da FourLife.
  *
  * O servidor já existia quando este painel foi reescrito, por isso os nomes dos
  * campos são os dele e não se traduzem: renomear aqui só criaria uma segunda

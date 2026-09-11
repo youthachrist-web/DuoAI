@@ -9,6 +9,7 @@ const SUGESTOES = [
   "Resumo executivo de hoje",
   "Quais as 3 clínicas que devo contactar primeiro?",
   "Escreve uma abordagem de parceria para uma clínica de fisioterapia",
+  "Lança uma busca de Metalurgia em Joinville",
 ];
 
 export function Assistente() {
@@ -132,7 +133,28 @@ export function Assistente() {
       <Cartao semPadding>
         <div className="max-h-[58vh] min-h-[220px] space-y-3 overflow-y-auto p-4">
           {!falas.length ? (
-            <Vazio>Sem conversas ainda. As tuas conversas com o Four4AI ficam guardadas aqui.</Vazio>
+            <div className="py-8 text-center">
+              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-turquesa-tenue">
+                <I.Robo className="h-6 w-6 text-turquesa" />
+              </span>
+              <p className="mt-3 font-semibold">Precisas de alguma coisa?</p>
+              <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-suave">
+                Pergunta sobre a base, os leads ou o dia. Se pedires uma tarefa, eu proponho-a e és tu
+                que confirmas.
+              </p>
+              <div className="mx-auto mt-4 flex max-w-md flex-col gap-2">
+                {SUGESTOES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => void perguntar(s)}
+                    className="rounded-xl border border-borda px-3.5 py-2.5 text-left text-sm text-suave transition-colors hover:border-turquesa hover:text-texto"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           ) : (
             falas.map((f, i) => (
               <div key={i} className={f.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -191,20 +213,6 @@ export function Assistente() {
             </Botao>
           </form>
 
-          {!falas.length && (
-            <div className="mt-2.5 flex flex-wrap gap-2">
-              {SUGESTOES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => void perguntar(s)}
-                  className="rounded-xl border border-borda px-2.5 py-1.5 text-xs text-suave hover:bg-fundo"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </Cartao>
     </div>

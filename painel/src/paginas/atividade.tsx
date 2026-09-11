@@ -44,6 +44,76 @@ function Decisor({ lead }: { lead: api.Lead }) {
   );
 }
 
+/**
+ * A varredura do LinkedIn pelo Apify, como o servidor a conta.
+ *
+ * Tudo aqui vem tal e qual de três sítios do servidor — o resumo do LinkedIn, a
+ * linha da varredura contínua no estado, e a lista de fontes. Nada é calculado
+ * nem arredondado no browser: se um número não vier, fica a dizer que não veio,
+ * em vez de aparecer um zero que ninguém sabe de onde é.
+ */
+function Apify() {
+  const resumo = usarDados(api.resumoLinkedin, { intervaloMs: 60_000 });
+  const estado = usarDados(api.estado, { intervaloMs: 60_000 });
+  const fontes = usarDados(api.fontes, { intervaloMs: 300_000 });
+
+  const varredura = estado.dados?.checks.find((c) => c.name.toLowerCase().includes("varredura"));
+  const apify = fontes.dados?.fontes.find((f) => f.name.toLowerCase().includes("apify"));
+
+  return (
+    <Cartao titulo="Apify · varredura do LinkedIn" etiqueta="o que correu">
+      {!resumo.dados && !varredura ? (
+        <ACarregar />
+      ) : (
+        <div className="space-y-4">
+          {resumo.dados?.recusa && <Aviso>{resumo.dados.recusa}</Aviso>}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-borda p-3.5">
+              <p className="etiqueta">Responsáveis novos hoje</p>
+              <p className="numero mt-1 text-2xl">
+                {resumo.dados ? numero(resumo.dados.quantos) : "—"}
+              </p>
+            </div>
+            <div className="rounded-xl border border-borda p-3.5">
+              <p className="etiqueta">Actores em uso</p>
+              <p className="mt-1 font-mono text-[11px] leading-relaxed text-suave">
+                {/* O servidor já escreve "actores ..." — o rótulo diz o mesmo, tira-se um. */}
+                {apify?.detail?.replace(/^actores\s+/i, "") ?? "—"}
+              </p>
+            </div>
+          </div>
+
+          {resumo.dados?.linhas.length ? (
+            <ul className="space-y-1.5 text-sm leading-relaxed">
+              {resumo.dados.linhas.map((l, i) => (
+                <li key={i} className="flex gap-2 text-suave">
+                  <span className="mt-[8px] h-1 w-1 shrink-0 rounded-full bg-turquesa" />
+                  {l}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {varredura && (
+            <div>
+              <p className="etiqueta mb-1.5">O que o servidor conta das últimas horas</p>
+              <p className="rounded-xl bg-fundo p-3 text-xs leading-relaxed text-suave">
+                {varredura.detail ?? "sem detalhe"}
+              </p>
+            </div>
+          )}
+
+          <p className="text-[11px] leading-relaxed text-tenue">
+            Estes números vêm do servidor tal como ele os conta — do resumo do LinkedIn, da varredura
+            contínua no estado, e da lista de fontes. Nada é calculado aqui.
+          </p>
+        </div>
+      )}
+    </Cartao>
+  );
+}
+
 function Origens() {
   const { dados, erro } = usarDados(api.origens, { intervaloMs: 60_000 });
 
@@ -119,6 +189,8 @@ export function Atividade() {
       <Cartao titulo="Origem dos leads" etiqueta="de onde vieram · quem decide">
         <Origens />
       </Cartao>
+
+      <Apify />
 
       <Cartao
         titulo="Quem decide"
