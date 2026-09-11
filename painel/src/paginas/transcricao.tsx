@@ -78,7 +78,7 @@ export function Transcricao() {
       {erro && <Aviso tom="erro">{erro}</Aviso>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Cartao titulo="Carregar ficheiro de áudio">
+        <Cartao titulo="Carregar Ficheiro de Áudio">
           <label className="block cursor-pointer rounded-xl border border-dashed border-borda p-6 text-center hover:bg-fundo">
             <I.Telemovel className="mx-auto h-7 w-7 text-tenue" />
             <p className="mt-2 text-sm font-medium">
@@ -101,7 +101,7 @@ export function Transcricao() {
 
         <Cartao titulo="Transcrever por URL">
           <p className="mb-2 text-xs leading-relaxed text-suave">
-            Ideal para mensagens de voz do WhatsApp, quando tens o endereço do ficheiro.
+            Ideal para mensagens de voz do WhatsApp (URL do media).
           </p>
           <input
             className={campo}
@@ -119,14 +119,13 @@ export function Transcricao() {
       </div>
 
       {ultima && (
-        <Cartao titulo="Última transcrição" accao={<Selo tom="bom">concluída</Selo>}>
+        <Cartao titulo="Última Transcrição" accao={<Selo tom="bom">concluída</Selo>}>
           <Texto t={ultima} />
         </Cartao>
       )}
 
       <Cartao
-        titulo="Histórico"
-        accao={<span className="etiqueta">{historico.dados?.length ?? 0}</span>}
+        titulo={`Histórico (${historico.dados?.length ?? 0})`}
       >
         {!historico.dados ? (
           <ACarregar />
@@ -143,7 +142,7 @@ export function Transcricao() {
         )}
       </Cartao>
 
-      <p className="text-center text-xs text-tenue">Transcrito pelo Whisper, no gateway multimodal.</p>
+      <p className="text-center text-xs text-tenue">Powered by OpenAI Whisper, pelo gateway multimodal.</p>
     </div>
   );
 }

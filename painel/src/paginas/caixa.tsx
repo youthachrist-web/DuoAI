@@ -100,14 +100,14 @@ export function CaixaDeEntrada() {
           />
           <input
             className={`${campo} mt-2`}
-            placeholder="Ex: responder com interesse mas pedir mais detalhes"
+            placeholder="Instrução para o DuoAI (opcional) — ex: responder com interesse mas pedir mais detalhes"
             value={recebido.instruction}
             onChange={(e) => mudar("instruction")(e.target.value)}
           />
           <div className="mt-3">
             <Botao onClick={rascunhar} disabled={!podeRascunhar || ocupado !== null}>
               <I.Robo className="h-4 w-4" />
-              {ocupado === "rascunho" ? "a gerar rascunho…" : "Gerar rascunho"}
+              {ocupado === "rascunho" ? "A gerar rascunho…" : "Gerar Rascunho com IA"}
             </Botao>
           </div>
         </Cartao>
@@ -151,8 +151,11 @@ export function CaixaDeEntrada() {
           <div className="mt-3">
             <Botao onClick={enviar} disabled={!podeEnviar || ocupado !== null}>
               <I.Caixa className="h-4 w-4" />
-              {ocupado === "envio" ? "a enviar…" : "Enviar via Resend"}
+              {ocupado === "envio" ? "A enviar…" : "Enviar via Resend"}
             </Botao>
+            <p className="mt-2 text-xs text-suave">
+              O envio sai pela Resend, com o remetente verificado do servidor.
+            </p>
           </div>
         </Cartao>
       </div>

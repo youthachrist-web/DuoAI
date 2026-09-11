@@ -2,6 +2,7 @@ import { Link, Route, Switch, useLocation } from "wouter";
 import { usarDados } from "./lib/usar-dados";
 import * as api from "./lib/api";
 import * as I from "./componentes/icones";
+import { SeloWhatsApp } from "./componentes/selo-whatsapp";
 import { Painel } from "./paginas/painel";
 import { Diario } from "./paginas/diario";
 import { Worklab } from "./paginas/worklab";
@@ -45,6 +46,7 @@ function Topo() {
         </Link>
 
         <div className="flex items-center gap-2">
+          <SeloWhatsApp />
           {aFalhar.length > 0 && (
             <Link
               href="/"

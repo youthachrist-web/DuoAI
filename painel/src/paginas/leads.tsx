@@ -6,6 +6,7 @@ import { numero, data } from "../lib/formatar";
 import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componentes/base";
 import { TIPOS_DE_PEDIDO } from "../lib/nichos";
 import { janelaAberta, janelaDoSetor, textoDaJanela } from "../lib/melhores-horas";
+import { normalizarCelular, sinaisDoLead } from "../lib/telefone";
 
 const PERIODOS = [
   { valor: "all", nome: "Toda a base de leads" },
@@ -194,13 +195,27 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
 
           {erro && <Aviso tom="erro">{erro}</Aviso>}
 
-          <Botao onClick={disparar} className="w-full" disabled={!lead.whatsapp && !lead.phone}>
-            <I.Conversa className="h-4 w-4" />
-            {lead.whatsapp || lead.phone ? "DISPARAR NO WHATSAPP" : "Sem número de WhatsApp"}
-          </Botao>
-          <p className="text-center text-xs text-suave">
-            O WhatsApp abre com o texto pronto; és tu que confirmas o envio.
-          </p>
+          {(() => {
+            const celular = normalizarCelular(lead.whatsapp ?? lead.phone);
+            const temAlgum = !!(lead.whatsapp || lead.phone);
+            return (
+              <>
+                <Botao onClick={disparar} className="w-full" disabled={!celular}>
+                  <I.Conversa className="h-4 w-4" />
+                  {celular
+                    ? "DISPARAR NO WHATSAPP"
+                    : temAlgum
+                      ? "Sem celular — este número não recebe WhatsApp"
+                      : "Sem nº telemóvel associado"}
+                </Botao>
+                <p className="text-center text-xs text-suave">
+                  {celular
+                    ? "O WhatsApp abre com o texto pronto; és tu que confirmas o envio."
+                    : "Este lead não tem número de celular — usa o email ou procura o contacto no site."}
+                </p>
+              </>
+            );
+          })()}
 
           <div className="border-t border-borda pt-4">
             <p className="etiqueta mb-2">Registar interesse / pedido do lead</p>
@@ -381,7 +396,20 @@ export function Leads() {
           onChange={(e) => definirScoreMin(Number(e.target.value))}
           className="w-full accent-marca"
         />
-        {!scoreMin && <p className="text-xs text-suave">Qualquer score.</p>}
+        <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
+          {([[0, "Qualquer score"], [60, "60 ou mais"], [80, "80 ou mais — só os mais quentes"]] as const).map(
+            ([v, nome]) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => definirScoreMin(v)}
+                className={scoreMin === v ? "font-semibold text-marca" : "text-suave"}
+              >
+                {nome}
+              </button>
+            ),
+          )}
+        </div>
       </Grupo>
 
       {nFiltros > 0 && (
@@ -422,7 +450,9 @@ export function Leads() {
           <span className="text-xs text-suave">
             {exportacao.dados?.at
               ? `Último download: ${data(exportacao.dados.at)}`
-              : "Ainda não houve nenhum download — desta vez sai a base toda."}
+              : exportacao.aCarregar
+                ? "A ver quando foi o último download…"
+                : "Ainda não houve nenhum download — desta vez sai a base toda."}
           </span>
         </div>
         {erroDoDownload && (
@@ -456,7 +486,7 @@ export function Leads() {
           semPadding
         >
           {lista.aCarregar && !lista.dados ? (
-            <ACarregar>A varrer alvos…</ACarregar>
+            <ACarregar>A carregar a lista — podes baixar já, o servidor tem os mesmos dados.</ACarregar>
           ) : !filtrados.length ? (
             <Vazio>Nenhum lead corresponde a estes filtros.</Vazio>
           ) : (
@@ -474,11 +504,11 @@ export function Leads() {
                           {l.whatsapp ?? l.phone ?? l.email ?? "sem contacto"}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {l.whatsapp && <Selo tom="bom">WhatsApp</Selo>}
-                          {!l.whatsapp && l.phone && <Selo>telefone</Selo>}
-                          {l.email && <Selo>email</Selo>}
-                          {l.website && <Selo>site</Selo>}
-                          {l.linkedinUrl && <Selo>LinkedIn</Selo>}
+                          {sinaisDoLead(l).map((s) => (
+                            <Selo key={s.texto} tom={s.tom}>
+                              {s.texto}
+                            </Selo>
+                          ))}
                           {l.lastContactedAt ? (
                             <Selo tom="marca">falámos em {data(l.lastContactedAt)}</Selo>
                           ) : (

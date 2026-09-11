@@ -56,7 +56,7 @@ function LigarWhatsApp() {
           />
         ) : (
           <p className="py-16 text-center font-mono text-sm text-tenue">
-            {qr.erro ?? qr.dados?.detail ?? "a pedir um código…"}
+            {qr.erro ?? qr.dados?.detail ?? (qr.aCarregar ? "Código expirado, a pedir outro…" : "Sem código disponível neste momento.")}
           </p>
         )}
       </div>
@@ -444,7 +444,7 @@ export function Diario() {
               <Vazio>
                 {saltados.length
                   ? "Saltaste todos os que havia. Traz de volta para os rever."
-                  : "Não há leads pendentes para contactar hoje com os filtros atuais."}
+                  : "Sem ninguém elegível agora. Não há leads pendentes para contactar hoje com os filtros atuais."}
               </Vazio>
             ) : (
               <ul className="mt-4 space-y-2.5">

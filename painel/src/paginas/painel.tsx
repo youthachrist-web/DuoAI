@@ -75,7 +75,7 @@ function Janelas() {
 
   return (
     <Cartao titulo="Boas horas por setor" etiqueta={`${agora} em brasília`}>
-      <p className="mb-3 text-xs text-suave">Verde é boa hora agora.</p>
+      <p className="mb-3 text-xs text-suave">Janelas em hora de Brasília · verde = boa hora agora.</p>
       <ul className="space-y-1.5">
         {linhas.map(({ setor, janela, aberta }) => (
           <li

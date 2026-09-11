@@ -7,8 +7,8 @@ import { Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componen
 
 const SUGESTOES = [
   "Resumo executivo de hoje",
-  "Quais as 3 empresas que devo contactar primeiro?",
-  "Que setores estão a render mais leads?",
+  "Quais as 3 clínicas que devo contactar primeiro?",
+  "Escreve uma abordagem de parceria para uma clínica de fisioterapia",
 ];
 
 export function Assistente() {
@@ -132,7 +132,7 @@ export function Assistente() {
       <Cartao semPadding>
         <div className="max-h-[58vh] min-h-[220px] space-y-3 overflow-y-auto p-4">
           {!falas.length ? (
-            <Vazio>Pergunta o que quiseres sobre a operação.</Vazio>
+            <Vazio>Sem conversas ainda. As tuas conversas com o DuoAI ficam guardadas aqui.</Vazio>
           ) : (
             falas.map((f, i) => (
               <div key={i} className={f.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -164,6 +164,28 @@ export function Assistente() {
               onChange={(e) => definirTexto(e.target.value)}
               disabled={aResponder}
             />
+            <label
+              title="Anexar ficheiro (CSV, TXT, MD, JSON)"
+              className="grid h-[42px] w-[42px] shrink-0 cursor-pointer place-items-center rounded-xl border border-borda hover:bg-fundo"
+            >
+              <I.Documento className="h-4 w-4 text-suave" />
+              <input
+                type="file"
+                accept=".csv,.txt,.md,.json,text/plain,text/csv,application/json"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  // O ficheiro entra como texto na pergunta: o assistente lê-o como
+                  // contexto, e assim não é preciso rota nova no servidor.
+                  const conteudo = (await f.text()).slice(0, 20000);
+                  definirTexto(
+                    (t) => `${t}\n\n--- ${f.name} ---\n${conteudo}`.trim(),
+                  );
+                }}
+              />
+            </label>
             <Botao onClick={() => void perguntar(texto)} disabled={aResponder || !texto.trim()}>
               <I.Enviar className="h-4 w-4 rotate-90" />
             </Botao>

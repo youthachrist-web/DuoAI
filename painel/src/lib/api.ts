@@ -17,16 +17,29 @@ export class ErroDaApi extends Error {
   }
 }
 
+/** Ao fim disto desiste-se: um painel a rodar para sempre não diz nada a ninguém. */
+const LIMITE_MS = 45_000;
+
 async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(BASE + caminho, {
-    ...init,
-    headers: init?.body ? { "Content-Type": "application/json", ...init?.headers } : init?.headers,
-  });
+  const desistir = AbortSignal.timeout(LIMITE_MS);
+  let r: Response;
+  try {
+    r = await fetch(BASE + caminho, {
+      ...init,
+      signal: desistir,
+      headers: init?.body ? { "Content-Type": "application/json", ...init?.headers } : init?.headers,
+    });
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) {
+      throw new ErroDaApi(408, "A API não respondeu a tempo. Tenta outra vez daqui a alguns segundos.");
+    }
+    throw e;
+  }
   if (r.status === 401) {
     // A sessão caiu. Recarregar traz a página de entrada servida pela porta, em
     // vez de deixar o painel a mostrar erros que não explicam nada.
     window.location.reload();
-    throw new ErroDaApi(401, "sessão terminada");
+    throw new ErroDaApi(401, "Sessão expirada. Entra outra vez.");
   }
   if (!r.ok) {
     // O servidor responde em JSON quando sabe explicar-se e em HTML quando rebentou.
@@ -131,6 +144,7 @@ export type Lead = {
   ultimoWhatsApp: string | null;
   linkedinUrl: string | null;
   employeeCount: number | null;
+  optOutAt: string | null;
 };
 
 export type Facetas = {
@@ -162,6 +176,9 @@ export type EstadoWhatsApp = {
   detail: string;
   state: string;
   instancia: string;
+  since?: string | null;
+  canal?: string | null;
+  provider?: string | null;
   envios: { ok: boolean; recusasSeguidas: number; aviso: string | null };
 };
 export const estadoWhatsApp = () => pedir<EstadoWhatsApp>("/whatsapp/status");
@@ -232,7 +249,8 @@ export type Proposta = {
   createdAt?: string;
 };
 export const propostas = () => pedir<Proposta[]>("/proposals");
-export const enviarProposta = (id: number) => post<unknown>(`/proposals/${id}/send-email`);
+export const enviarProposta = (id: number, corpo?: { email: string }) =>
+  post<unknown>(`/proposals/${id}/send-email`, corpo ?? {});
 
 export type Contrato = {
   id: number;

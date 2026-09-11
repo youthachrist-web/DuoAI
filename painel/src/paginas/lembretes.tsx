@@ -1,49 +1,90 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
-import { numero, quandoFoi } from "../lib/formatar";
+import { numero } from "../lib/formatar";
 import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "../componentes/base";
+import { normalizarCelular, recebeWhatsApp } from "../lib/telefone";
+
+const RECORRENCIAS = [
+  { valor: "none", nome: "Sem recorrência" },
+  { valor: "daily", nome: "Diário" },
+  { valor: "weekly", nome: "Semanal" },
+  { valor: "monthly", nome: "Mensal" },
+] as const;
+
+function quando(iso?: string | null) {
+  if (!iso) return "sem data";
+  return new Date(iso).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export function Lembretes() {
-  const lista = usarDados(api.lembretes, { intervaloMs: 60_000 });
-  const leads = usarDados(() => api.leads(500));
+  const lista = usarDados(api.lembretes, { intervaloMs: 30_000 });
+  const leads = usarDados(() => api.leads(2000));
 
-  const [leadId, definirLeadId] = useState("");
-  const [mensagem, definirMensagem] = useState("");
-  const [quando, definirQuando] = useState("");
-  const [cadencia, definirCadencia] = useState("once");
+  const [forma, definirForma] = useState({
+    chatId: "",
+    chatName: "",
+    message: "",
+    reminderDate: "",
+    recurrenceType: "none",
+    recurrenceInterval: "",
+  });
   const [aCriar, definirACriar] = useState(false);
   const [erro, definirErro] = useState<string | null>(null);
+  const [nota, definirNota] = useState<string | null>(null);
 
-  const comWhatsApp = (leads.dados ?? []).filter((l) => l.whatsapp);
+  // Só leads com celular verdadeiro e sem pedido de não contacto.
+  const comWhatsApp = useMemo(
+    () =>
+      (leads.dados ?? [])
+        .filter((l) => recebeWhatsApp(l) && !l.optOutAt)
+        .sort((a, b) => b.score - a.score),
+    [leads.dados],
+  );
+
+  const mudar = (chave: keyof typeof forma) => (v: string) =>
+    definirForma((f) => ({ ...f, [chave]: v }));
 
   async function criar() {
     definirErro(null);
-    if (!mensagem.trim() || !quando) {
-      definirErro("Falta a mensagem ou a data.");
+    definirNota(null);
+    if (!forma.chatId.trim() || !forma.message.trim() || !forma.reminderDate) {
+      definirErro("Falta o contacto, a mensagem ou a data.");
       return;
     }
     definirACriar(true);
     try {
       await api.criarLembrete({
-        leadId: leadId ? Number(leadId) : null,
-        message: mensagem.trim(),
-        scheduledFor: new Date(quando).toISOString(),
-        cadence: cadencia,
+        ...forma,
+        reminderDate: new Date(forma.reminderDate).toISOString(),
+        recurrenceInterval: forma.recurrenceInterval ? Number(forma.recurrenceInterval) : null,
       });
-      definirMensagem("");
-      definirQuando("");
+      definirNota("Reminder criado com sucesso.");
+      definirForma({
+        chatId: "",
+        chatName: "",
+        message: "",
+        reminderDate: "",
+        recurrenceType: "none",
+        recurrenceInterval: "",
+      });
       await lista.recarregar();
     } catch (e) {
-      definirErro(e instanceof Error ? e.message : String(e));
+      definirErro(`Erro ao criar reminder: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       definirACriar(false);
     }
   }
 
   async function apagar(id: number) {
-    if (!window.confirm("Apagar este lembrete?")) return;
+    if (!window.confirm("Apagar este reminder?")) return;
     try {
       await api.apagarLembrete(id);
       await lista.recarregar();
@@ -54,77 +95,146 @@ export function Lembretes() {
 
   const activos = (lista.dados ?? []).filter((l) => l.active !== false);
   const inactivos = (lista.dados ?? []).filter((l) => l.active === false);
+  const agora = Date.now();
 
   return (
     <div className="space-y-4">
-      <Cabecalho titulo="Lembretes" descricao="Mensagens agendadas para não deixar um lead esfriar." />
+      <Cabecalho titulo="Reminders" descricao="Mensagens agendadas, para não deixar um lead esfriar." />
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
+      {nota && <p className="text-sm text-bom">{nota}</p>}
 
-      <Cartao titulo="Criar lembrete">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <select className={campo} value={leadId} onChange={(e) => definirLeadId(e.target.value)}>
-            <option value="">Sem lead associado</option>
+      <Cartao titulo="Criar Reminder">
+        <label className="block">
+          <span className="etiqueta">Lead com WhatsApp</span>
+          <select
+            className={`${campo} mt-1`}
+            value=""
+            onChange={(e) => {
+              const l = comWhatsApp.find((x) => String(x.id) === e.target.value);
+              if (!l) return;
+              definirForma((f) => ({
+                ...f,
+                chatId: `${normalizarCelular(l.whatsapp ?? l.phone)}@c.us`,
+                chatName: l.businessName,
+              }));
+            }}
+          >
+            <option value="">
+              {comWhatsApp.length
+                ? `Escolher entre ${comWhatsApp.length} leads`
+                : "Nenhum lead com WhatsApp ainda"}
+            </option>
             {comWhatsApp.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.businessName} · {l.city}
               </option>
             ))}
           </select>
-          <select className={campo} value={cadencia} onChange={(e) => definirCadencia(e.target.value)}>
-            <option value="once">Uma vez</option>
-            <option value="daily">Diário</option>
-            <option value="weekly">Semanal</option>
-            <option value="monthly">Mensal</option>
-          </select>
-          <input
-            type="datetime-local"
-            className={campo}
-            value={quando}
-            onChange={(e) => definirQuando(e.target.value)}
-          />
-          <input
-            className={campo}
-            placeholder="O que queres lembrar"
-            value={mensagem}
-            onChange={(e) => definirMensagem(e.target.value)}
-          />
+        </label>
+
+        <input
+          className={`${campo} mt-2 font-mono`}
+          placeholder="5547991234567@c.us"
+          value={forma.chatId}
+          onChange={(e) => mudar("chatId")(e.target.value)}
+        />
+        <p className="mt-1 text-xs text-suave">
+          Escolhe um lead acima e o número é preenchido, ou escreve-o à mão no formato
+          <span className="font-mono"> 55DDNNNNNNNNN@c.us</span>.
+        </p>
+
+        <input
+          className={`${campo} mt-3`}
+          placeholder="Nome do contacto"
+          value={forma.chatName}
+          onChange={(e) => mudar("chatName")(e.target.value)}
+        />
+
+        <textarea
+          className={`${campo} mt-2 min-h-28 resize-y`}
+          placeholder="Texto do reminder…"
+          value={forma.message}
+          onChange={(e) => mudar("message")(e.target.value)}
+        />
+
+        <div className="mt-2 grid gap-2 sm:grid-cols-3">
+          <label className="block">
+            <span className="etiqueta">Data e hora</span>
+            <input
+              type="datetime-local"
+              className={`${campo} mt-1`}
+              value={forma.reminderDate}
+              onChange={(e) => mudar("reminderDate")(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="etiqueta">Recorrência</span>
+            <select
+              className={`${campo} mt-1`}
+              value={forma.recurrenceType}
+              onChange={(e) => mudar("recurrenceType")(e.target.value)}
+            >
+              {RECORRENCIAS.map((r) => (
+                <option key={r.valor} value={r.valor}>
+                  {r.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+          {forma.recurrenceType !== "none" && (
+            <label className="block">
+              <span className="etiqueta">Intervalo (de quantos em quantos)</span>
+              <input
+                type="number"
+                min={1}
+                className={`${campo} mt-1`}
+                placeholder="1"
+                value={forma.recurrenceInterval}
+                onChange={(e) => mudar("recurrenceInterval")(e.target.value)}
+              />
+            </label>
+          )}
         </div>
+
         <div className="mt-3">
           <Botao onClick={criar} disabled={aCriar}>
             <I.Sino className="h-4 w-4" />
-            {aCriar ? "a criar…" : "Criar lembrete"}
+            {aCriar ? "a criar…" : "Criar Reminder"}
           </Botao>
         </div>
-        {!comWhatsApp.length && !leads.aCarregar && (
-          <p className="mt-3 text-xs text-suave">Ainda não há leads com WhatsApp para associar.</p>
-        )}
       </Cartao>
 
       <Cartao titulo={`Ativos (${numero(activos.length)})`}>
         {lista.aCarregar && !lista.dados ? (
           <ACarregar />
         ) : !activos.length ? (
-          <Vazio>Nenhum lembrete ativo. Cria um novo acima.</Vazio>
+          <Vazio>Nenhum reminder ativo. Cria um novo acima.</Vazio>
         ) : (
           <ul className="space-y-2">
-            {activos.map((l) => (
-              <li
-                key={l.id}
-                className="flex items-start justify-between gap-3 rounded-xl border border-borda px-3.5 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium leading-snug">{l.message ?? "(sem texto)"}</p>
-                  <p className="mt-0.5 text-xs text-suave">
-                    {l.scheduledFor ? quandoFoi(l.scheduledFor) : "sem data"}
-                    {l.cadence && l.cadence !== "once" && ` · ${l.cadence}`}
-                  </p>
-                </div>
-                <Botao pequeno variante="perigo" onClick={() => apagar(l.id)}>
-                  Apagar
-                </Botao>
-              </li>
-            ))}
+            {activos.map((l) => {
+              const atrasado = l.scheduledFor ? new Date(l.scheduledFor).getTime() < agora : false;
+              return (
+                <li
+                  key={l.id}
+                  className="flex items-start justify-between gap-3 rounded-xl border border-borda px-3.5 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium leading-snug">{l.message ?? "(sem texto)"}</p>
+                    <p className="mt-0.5 text-xs text-suave">
+                      {quando(l.scheduledFor)}
+                      {l.cadence && l.cadence !== "none" && ` · ${l.cadence}`}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {atrasado && <Selo tom="aviso">Atrasado</Selo>}
+                    <Botao pequeno variante="perigo" onClick={() => apagar(l.id)}>
+                      Apagar
+                    </Botao>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Cartao>
@@ -135,7 +245,7 @@ export function Lembretes() {
             {inactivos.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-3 text-sm text-suave">
                 <span className="truncate">{l.message}</span>
-                <Selo>inativo</Selo>
+                <Selo>Inativo</Selo>
               </li>
             ))}
           </ul>
