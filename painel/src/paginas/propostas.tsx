@@ -29,6 +29,19 @@ export function Propostas() {
   const [aEnviar, definirAEnviar] = useState<number | null>(null);
   const [erro, definirErro] = useState<string | null>(null);
 
+  async function marcarAceite(id: number) {
+    definirErro(null);
+    definirAEnviar(id);
+    try {
+      await api.actualizarProposta(id, { status: "accepted" });
+      await lista.recarregar();
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      definirAEnviar(null);
+    }
+  }
+
   async function enviar(id: number) {
     definirErro(null);
     definirAEnviar(id);
@@ -84,11 +97,21 @@ export function Propostas() {
                 <td className="px-4 py-3">
                   <Selo tom={p.status === "sent" ? "bom" : "neutro"}>{p.status}</Selo>
                 </td>
-                <td className="px-4 py-3 text-right">
-                  <Botao pequeno variante="contorno" onClick={() => enviar(p.id)} disabled={aEnviar === p.id}>
-                    <I.Caixa className="h-3.5 w-3.5" />
-                    {aEnviar === p.id ? "a enviar…" : "Enviar"}
-                  </Botao>
+                <td className="px-4 py-3">
+                  <div className="flex justify-end gap-2">
+                    <Botao pequeno variante="contorno" onClick={() => enviar(p.id)} disabled={aEnviar === p.id}>
+                      <I.Caixa className="h-3.5 w-3.5" />
+                      {aEnviar === p.id ? "a enviar…" : "Enviar"}
+                    </Botao>
+                    <Botao
+                      pequeno
+                      variante="contorno"
+                      onClick={() => marcarAceite(p.id)}
+                      disabled={aEnviar === p.id || p.status === "accepted"}
+                    >
+                      Marcar aceite
+                    </Botao>
+                  </div>
                 </td>
               </tr>
             ))}

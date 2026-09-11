@@ -2,8 +2,34 @@ import { useState } from "react";
 import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
-import { data } from "../lib/formatar";
+import { data, dinheiro, numero } from "../lib/formatar";
 import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Vazio } from "../componentes/base";
+
+/** Os números do dia, por cima do texto do relatório. */
+function Numeros() {
+  const resumo = usarDados(api.resumo, { intervaloMs: 120_000 });
+  const facetas = usarDados(api.facetas, { intervaloMs: 120_000 });
+  const r = resumo.dados;
+  const f = facetas.dados;
+  if (!r && !f) return null;
+  const celulas: [string, string][] = [
+    ["Novos 24h", numero(f?.today)],
+    ["Leads", numero(r?.totalLeads ?? f?.total)],
+    ["Propostas", numero(r?.proposalsSent)],
+    ["Pagos", numero(r?.paymentsDone)],
+    ["Receita", dinheiro(r?.revenueMonth)],
+  ];
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      {celulas.map(([rotulo, valor]) => (
+        <div key={rotulo} className="rounded-2xl border border-borda bg-cartao p-3.5">
+          <p className="etiqueta">{rotulo}</p>
+          <p className="mt-1 text-xl font-bold tabular-nums">{valor}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function Relatorios() {
   const lista = usarDados(api.relatorios, { intervaloMs: 300_000 });
@@ -42,6 +68,8 @@ export function Relatorios() {
       />
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
+
+      <Numeros />
 
       {lista.aCarregar && !lista.dados ? (
         <ACarregar />

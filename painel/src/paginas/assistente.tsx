@@ -101,7 +101,25 @@ export function Assistente() {
                   >
                     {c.title ?? `Conversa #${c.id}`}
                   </button>
-                  {c.createdAt && <Selo>{quandoFoi(c.createdAt)}</Selo>}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {c.createdAt && <Selo>{quandoFoi(c.createdAt)}</Selo>}
+                    <button
+                      type="button"
+                      title="Apagar esta conversa"
+                      className="text-xs text-alerta"
+                      onClick={async () => {
+                        if (!window.confirm("Apagar esta conversa?")) return;
+                        try {
+                          await api.apagarConversa(c.id);
+                          await conversas.recarregar();
+                        } catch (e) {
+                          definirErro(e instanceof Error ? e.message : String(e));
+                        }
+                      }}
+                    >
+                      apagar
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

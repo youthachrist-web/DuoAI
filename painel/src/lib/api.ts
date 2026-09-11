@@ -339,14 +339,44 @@ export async function perguntar(
   }
 }
 
+export type MensagemWorklab = {
+  name: string;
+  phone: string | null;
+  kind: string;
+  track: string;
+  pack?: string | null;
+  packPrice?: number | null;
+  text: string;
+  blocked?: string | null;
+  whatsappUrl?: string | null;
+};
+
+export type BaseWorklab = {
+  total: number;
+  sendable: number;
+  blocked: number;
+  messages: MensagemWorklab[];
+};
+
+export type LinksWorklab = {
+  labLink?: string;
+  specialistLink?: string;
+  resultLink?: string;
+  rescheduleLink?: string;
+};
+
 /** O CSV do Worklab. `kind` diz que tipo de mensagem sai de cada linha. */
 export async function enviarBaseWorklab(
   ficheiro: File,
-  kind: "rotina" | "alerta" | "confirmacao",
-): Promise<unknown> {
+  kind: "reativacao" | "confirmacao" | "resultado",
+  links: LinksWorklab = {},
+): Promise<BaseWorklab> {
   const forma = new FormData();
   forma.append("file", ficheiro);
   forma.append("kind", kind);
+  for (const [chave, valor] of Object.entries(links)) {
+    if (valor?.trim()) forma.append(chave, valor.trim());
+  }
   const r = await fetch(`${BASE}/worklab/upload`, { method: "POST", body: forma });
   if (r.status === 401) {
     window.location.reload();
@@ -362,7 +392,7 @@ export async function enviarBaseWorklab(
     }
     throw new ErroDaApi(r.status, mensagem);
   }
-  return texto ? JSON.parse(texto) : null;
+  return JSON.parse(texto) as BaseWorklab;
 }
 
 /* ------------------------------------------------- exportação dos leads */
@@ -464,3 +494,10 @@ export const rascunharResposta = (recebido: EmailRecebido) =>
 /** Envia a resposta pela Resend. `to` é livre — não precisa de ser um lead. */
 export const enviarResposta = (para: string, assunto: string, corpo: string) =>
   post<{ error?: string }>("/inbox/send", { to: para, subject: assunto, body: corpo });
+
+/** Muda o estado de uma proposta — por exemplo, marcá-la como aceite. */
+export const actualizarProposta = (id: number, mudanca: Record<string, unknown>) =>
+  pedir<Proposta>(`/proposals/${id}`, { method: "PATCH", body: JSON.stringify(mudanca) });
+
+export const apagarConversa = (id: number) =>
+  pedir<void>(`/conversations/${id}`, { method: "DELETE" });
