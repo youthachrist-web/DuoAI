@@ -9,7 +9,10 @@
 const BASE = "/api";
 
 export class ErroDaApi extends Error {
-  constructor(readonly estado: number, mensagem: string) {
+  constructor(
+    readonly estado: number,
+    mensagem: string,
+  ) {
     super(mensagem);
   }
 }
@@ -40,11 +43,17 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
   return r.status === 204 ? (undefined as T) : ((await r.json()) as T);
 }
 
+const post = <T>(caminho: string, corpo?: unknown) =>
+  pedir<T>(caminho, { method: "POST", body: corpo === undefined ? undefined : JSON.stringify(corpo) });
+
 /* ---------------------------------------------------------------- estado */
 
 export type Verificacao = { name: string; ok: boolean; detail?: string };
-export type Estado = { status: "ok" | "degradado" | string; checks: Verificacao[] };
+export type Estado = { status: string; checks: Verificacao[] };
 export const estado = () => pedir<Estado>("/status");
+
+export type Fonte = { name: string; ok: boolean; detail?: string };
+export const fontes = () => pedir<{ fontes: Fonte[] }>("/sdr/fontes");
 
 /* ------------------------------------------------------------- dashboard */
 
@@ -68,6 +77,36 @@ export const resumo = () => pedir<Resumo>("/dashboard/summary");
 export type Etapa = { name: string; count: number; value: number };
 export const pipeline = () => pedir<{ stages: Etapa[] }>("/dashboard/pipeline");
 
+export type DiaDeReceita = { date: string; revenue: number; leads: number };
+export const trajetoria = () => pedir<DiaDeReceita[]>("/dashboard/revenue");
+
+/* --------------------------------------------------------------- agentes */
+
+export type Agente = {
+  name: string;
+  status: string;
+  todayCount: number;
+  successCount: number;
+  lastRunAt: string | null;
+  currentTask?: string | null;
+};
+export const agentes = () => pedir<Record<string, Agente>>("/agents/status");
+
+export type Actividade = {
+  id: number;
+  agent: string;
+  event: string;
+  detail: string | null;
+  createdAt?: string;
+};
+export const actividade = () => pedir<Actividade[]>("/agents/activity");
+
+export type Origens = {
+  total: number;
+  contagens: { linkedin: number; mapa: number; porGargalo: Record<string, number> };
+};
+export const origens = () => pedir<Origens>("/control/lead-origins");
+
 /* ----------------------------------------------------------------- leads */
 
 export type Lead = {
@@ -86,9 +125,12 @@ export type Lead = {
   stage: string;
   hasSite: boolean | null;
   bottleneck: string | null;
+  bottleneckKind: string | null;
+  analysisSummary: string | null;
   lastContactedAt: string | null;
   ultimoWhatsApp: string | null;
   linkedinUrl: string | null;
+  employeeCount: number | null;
 };
 
 export type Facetas = {
@@ -101,8 +143,17 @@ export type Facetas = {
   uncontacted: number;
 };
 export const facetas = () => pedir<Facetas>("/leads/facets");
+export const leads = (limite = 1000) => pedir<Lead[]>(`/leads?limit=${limite}`);
+export const ultimaExportacao = () => pedir<{ at: string | null }>("/leads/last-export");
 
-export const leads = (limite = 200) => pedir<Lead[]>(`/leads?limit=${limite}`);
+export const rascunhoDeMensagem = (id: number) =>
+  post<{ message?: string; mensagem?: string }>(`/leads/${id}/draft-message`);
+export const rascunhoDeEmail = (id: number) =>
+  post<{ subject?: string; body?: string; assunto?: string; corpo?: string }>(`/leads/${id}/draft-email`);
+export const enviarEmail = (id: number, corpo?: unknown) =>
+  post<{ sent?: boolean; error?: string }>(`/leads/${id}/send-email`, corpo);
+export const procurarDecisor = (id: number) =>
+  post<{ decisor?: string | null; detail?: string }>(`/leads/${id}/decisor`);
 
 /* ------------------------------------------------------------- WhatsApp */
 
@@ -140,15 +191,16 @@ export type Fila = {
 };
 export const fila = (limite = 25) => pedir<Fila>(`/control/fila-whatsapp?limite=${limite}`);
 
-/** Devolve o link da conversa. O envio directo depende do WhatsApp estar ligado. */
 export const linkDaConversa = (id: number) =>
   pedir<{ url: string; mensagem?: string }>(`/leads/${id}/whatsapp-link`);
-
 export const enviarWhatsApp = (id: number) =>
-  pedir<{ sent: boolean; url?: string; usarLink?: boolean; detail?: string }>(
-    `/leads/${id}/whatsapp-send`,
-    { method: "POST" },
-  );
+  post<{ sent: boolean; url?: string; usarLink?: boolean; detail?: string }>(`/leads/${id}/whatsapp-send`);
+
+/* --------------------------------------------------------- os interruptores */
+
+export const autorizarContactos = () => post<unknown>("/control/outreach");
+export const zerarContactados = () => post<unknown>("/control/reset-contacts");
+export const limparRelatorios = () => post<unknown>("/control/reset-reports");
 
 /* ------------------------------------------------------------ prospeção */
 
@@ -164,32 +216,151 @@ export type Corrida = {
 };
 export const corridas = () => pedir<Corrida[]>("/prospecting/runs");
 export const lancarCorrida = (niche: string, city: string, limit: number) =>
-  pedir<Corrida>("/prospecting/runs", {
-    method: "POST",
-    body: JSON.stringify({ niche, city, limit }),
-  });
+  post<Corrida>("/prospecting/runs", { niche, city, limit });
+
+export type ResumoLinkedin = { quantos: number; recusa: string | null; linhas: string[]; nota?: string };
+export const resumoLinkedin = () => pedir<ResumoLinkedin>("/control/resumo-linkedin");
+
+/* ------------------------------------------------- propostas e contratos */
+
+export type Proposta = {
+  id: number;
+  leadId: number | null;
+  packageName?: string | null;
+  status: string;
+  totalValue?: number | null;
+  createdAt?: string;
+};
+export const propostas = () => pedir<Proposta[]>("/proposals");
+export const enviarProposta = (id: number) => post<unknown>(`/proposals/${id}/send-email`);
+
+export type Contrato = {
+  id: number;
+  leadId: number | null;
+  status: string;
+  monthlyValue?: number | null;
+  setupFee?: number | null;
+  createdAt?: string;
+};
+export const contratos = () => pedir<Contrato[]>("/contracts");
+export const linkDePagamento = (id: number) =>
+  post<{ url?: string; error?: string }>(`/contracts/${id}/checkout-session`);
+export const confirmarPagamento = (id: number) => post<unknown>(`/contracts/${id}/verify-payment`);
 
 /* ------------------------------------------------------------ relatórios */
 
 export type Relatorio = { id: number; reportDate: string; title: string; markdown: string };
 export const relatorios = () => pedir<Relatorio[]>("/reports");
+export const gerarRelatorio = () => post<Relatorio>("/reports/generate", {});
 
-/* --------------------------------------------------------------- agentes */
+/* ------------------------------------------------------------- lembretes */
 
-export type Agente = {
-  name: string;
-  status: string;
-  todayCount: number;
-  successCount: number;
-  lastRunAt: string | null;
-  currentTask?: string | null;
+export type Lembrete = {
+  id: number;
+  leadId?: number | null;
+  message?: string;
+  scheduledFor?: string;
+  cadence?: string;
+  active?: boolean;
 };
-export const agentes = () => pedir<Record<string, Agente>>("/agents/status");
+export const lembretes = () => pedir<Lembrete[]>("/reminders");
+export const criarLembrete = (dados: unknown) => post<Lembrete>("/reminders", dados);
+export const apagarLembrete = (id: number) => pedir<void>(`/reminders/${id}`, { method: "DELETE" });
 
-export type Actividade = { id: number; agent: string; event: string; detail: string | null; createdAt?: string };
-export const actividade = () => pedir<Actividade[]>("/agents/activity");
+/* ------------------------------------------------------------ comunicações */
 
-/* ------------------------------------------------------------- LinkedIn */
+export type Comunicacao = {
+  id: number;
+  channel: string;
+  direction: string;
+  status: string;
+  type?: string | null;
+  toAddress?: string | null;
+  subject?: string | null;
+  createdAt?: string;
+};
+export const comunicacoes = (limite = 50) => pedir<Comunicacao[]>(`/communications?limit=${limite}`);
 
-export type ResumoLinkedin = { quantos: number; recusa: string | null; linhas: string[]; nota?: string };
-export const resumoLinkedin = () => pedir<ResumoLinkedin>("/control/resumo-linkedin");
+/* -------------------------------------------------------------- assistente */
+
+export type Conversa = { id: number; title?: string | null; createdAt?: string };
+export const conversas = () => pedir<Conversa[]>("/conversations");
+export const mensagensDaConversa = (id: number) =>
+  pedir<{ id: number; role: string; content: string }[]>(`/conversations/${id}/messages`);
+export type Fala = { role: "user" | "assistant"; content: string };
+
+/**
+ * Pergunta ao assistente e vai entregando a resposta à medida que ela chega.
+ *
+ * O servidor responde em fluxo, linha a linha, no formato de eventos do browser:
+ * `data: {"content":"..."}` até `data: {"done":true}`. Mostrar só no fim daria
+ * uma espera de dezenas de segundos com o ecrã parado.
+ */
+export async function perguntar(
+  mensagens: Fala[],
+  aoReceber: (pedaco: string) => void,
+  sinal?: AbortSignal,
+): Promise<void> {
+  const r = await fetch(`${BASE}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: mensagens }),
+    signal: sinal,
+  });
+  if (r.status === 401) {
+    window.location.reload();
+    throw new ErroDaApi(401, "sessão terminada");
+  }
+  if (!r.ok || !r.body) throw new ErroDaApi(r.status, `o servidor respondeu ${r.status}`);
+
+  const leitor = r.body.getReader();
+  const descodificar = new TextDecoder();
+  let sobra = "";
+  for (;;) {
+    const { done, value } = await leitor.read();
+    if (done) break;
+    sobra += descodificar.decode(value, { stream: true });
+    // Uma linha só chega inteira quando vem o \n; o resto fica para a volta seguinte.
+    const linhas = sobra.split("\n");
+    sobra = linhas.pop() ?? "";
+    for (const linha of linhas) {
+      if (!linha.startsWith("data:")) continue;
+      const corpo = linha.slice(5).trim();
+      if (!corpo) continue;
+      try {
+        const j = JSON.parse(corpo) as { content?: string; done?: boolean; error?: string };
+        if (j.error) throw new Error(j.error);
+        if (j.content) aoReceber(j.content);
+        if (j.done) return;
+      } catch (e) {
+        if (e instanceof Error && e.message && !e.message.startsWith("Unexpected")) throw e;
+      }
+    }
+  }
+}
+
+/** O CSV do Worklab. `kind` diz que tipo de mensagem sai de cada linha. */
+export async function enviarBaseWorklab(
+  ficheiro: File,
+  kind: "rotina" | "alerta" | "confirmacao",
+): Promise<unknown> {
+  const forma = new FormData();
+  forma.append("file", ficheiro);
+  forma.append("kind", kind);
+  const r = await fetch(`${BASE}/worklab/upload`, { method: "POST", body: forma });
+  if (r.status === 401) {
+    window.location.reload();
+    throw new ErroDaApi(401, "sessão terminada");
+  }
+  const texto = await r.text();
+  if (!r.ok) {
+    let mensagem = `o servidor respondeu ${r.status}`;
+    try {
+      mensagem = (JSON.parse(texto) as { error?: string }).error ?? mensagem;
+    } catch {
+      /* fica a mensagem genérica */
+    }
+    throw new ErroDaApi(r.status, mensagem);
+  }
+  return texto ? JSON.parse(texto) : null;
+}

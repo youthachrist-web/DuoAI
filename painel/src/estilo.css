@@ -3,39 +3,73 @@
 /* Os nomes aqui geram as classes: --color-marca dá bg-marca, text-marca, border-marca.
    É a forma do Tailwind v4 — a sintaxe bg-[--color-marca] da v3 não gera nada. */
 @theme {
-  --color-marca: #0F766E;
-  --color-marca-clara: #14B8A6;
-  --color-fundo: #F6F7F9;
+  --color-marca: #0E8577;
+  --color-marca-forte: #0A6D62;
+  --color-marca-tenue: #E6F4F1;
+  --color-fundo: #F4F6F7;
   --color-cartao: #FFFFFF;
-  --color-borda: #E3E6EB;
-  --color-texto: #14181F;
-  --color-suave: #667085;
-  --color-alerta: #B42318;
-  --color-aviso: #B54708;
-  --color-bom: #067647;
+  --color-borda: #E5E8EB;
+  --color-texto: #12171D;
+  --color-suave: #6B7480;
+  --color-tenue: #98A1AC;
+  --color-alerta: #C0392B;
+  --color-aviso: #B45309;
+  --color-aviso-tenue: #FDF3E3;
+  --color-bom: #0E7A4B;
+
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 /* O tema escuro redefine as mesmas variáveis. As classes não mudam. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-marca: #14B8A6;
-    --color-marca-clara: #2DD4BF;
-    --color-fundo: #0D1117;
-    --color-cartao: #161B22;
-    --color-borda: #2A313C;
-    --color-texto: #E6EDF3;
-    --color-suave: #9198A1;
-    --color-alerta: #FF7B72;
-    --color-aviso: #E3B341;
-    --color-bom: #3FB950;
+    --color-marca: #2DD4BF;
+    --color-marca-forte: #5EEAD4;
+    --color-marca-tenue: #0C2E2B;
+    --color-fundo: #0C1014;
+    --color-cartao: #151B21;
+    --color-borda: #262E37;
+    --color-texto: #E8EDF2;
+    --color-suave: #8E99A6;
+    --color-tenue: #6B7480;
+    --color-alerta: #FF8A7A;
+    --color-aviso: #E9B44C;
+    --color-aviso-tenue: #2A2113;
+    --color-bom: #4ADE80;
   }
 }
 
-html, body, #raiz { height: 100%; }
+html,
+body,
+#raiz {
+  height: 100%;
+}
+
 body {
   margin: 0;
   background: var(--color-fundo);
   color: var(--color-texto);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* A etiqueta em maiúsculas espaçadas que o painel usa para rótulos de métricas,
+   colunas de tabela e estados. Aparece em todo o lado, por isso vive aqui. */
+.etiqueta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--color-suave);
+}
+
+/* As barras de deslocamento horizontais da navegação e das tabelas ficam
+   escondidas: no telemóvel não se usam, e no computador a barra por cima do
+   conteúdo corta a última linha. */
+.sem-barra {
+  scrollbar-width: none;
+}
+.sem-barra::-webkit-scrollbar {
+  display: none;
 }

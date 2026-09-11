@@ -1,78 +1,116 @@
 import { Link, Route, Switch, useLocation } from "wouter";
 import { usarDados } from "./lib/usar-dados";
 import * as api from "./lib/api";
-import { Pastilha } from "./componentes/base";
+import * as I from "./componentes/icones";
 import { Painel } from "./paginas/painel";
 import { Diario } from "./paginas/diario";
+import { Worklab } from "./paginas/worklab";
+import { Assistente } from "./paginas/assistente";
 import { Leads } from "./paginas/leads";
 import { Prospecao } from "./paginas/prospecao";
+import { Propostas } from "./paginas/propostas";
+import { Contratos } from "./paginas/contratos";
 import { Relatorios } from "./paginas/relatorios";
+import { Atividade } from "./paginas/atividade";
+import { Lembretes } from "./paginas/lembretes";
+import { CaixaDeEntrada } from "./paginas/caixa";
 
 const PAGINAS = [
-  { caminho: "/", nome: "Painel" },
-  { caminho: "/diario", nome: "Diário" },
-  { caminho: "/leads", nome: "Leads" },
-  { caminho: "/prospecao", nome: "Prospeção" },
-  { caminho: "/relatorios", nome: "Relatórios" },
+  { caminho: "/", nome: "Painel", icone: I.Grelha, pagina: Painel },
+  { caminho: "/diario", nome: "Painel Diário", icone: I.Calendario, pagina: Diario },
+  { caminho: "/worklab", nome: "Base Worklab", icone: I.Enviar, pagina: Worklab },
+  { caminho: "/duoai", nome: "DuoAI", icone: I.Robo, pagina: Assistente },
+  { caminho: "/leads", nome: "Leads", icone: I.Pessoas, pagina: Leads },
+  { caminho: "/prospecao", nome: "Prospeção", icone: I.Alvo, pagina: Prospecao },
+  { caminho: "/propostas", nome: "Propostas", icone: I.Documento, pagina: Propostas },
+  { caminho: "/contratos", nome: "Contratos", icone: I.Contrato, pagina: Contratos },
+  { caminho: "/relatorios", nome: "Relatórios", icone: I.Jornal, pagina: Relatorios },
+  { caminho: "/atividade", nome: "Atividade", icone: I.Pulso, pagina: Atividade },
+  { caminho: "/lembretes", nome: "Reminders", icone: I.Sino, pagina: Lembretes },
+  { caminho: "/caixa", nome: "Inbox", icone: I.Caixa, pagina: CaixaDeEntrada },
 ];
 
-function Cabecalho() {
-  const { dados } = usarDados(api.estado, { intervaloMs: 60_000 });
-  const [onde] = useLocation();
+function Topo() {
+  const { dados, aCarregar, recarregar } = usarDados(api.estado, { intervaloMs: 60_000 });
   const aFalhar = dados?.checks.filter((c) => !c.ok) ?? [];
 
   return (
-    <header className="sticky top-0 z-10 border-b border-borda bg-cartao/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-marca text-sm font-bold text-white">
-            D
+    <header className="sticky top-0 z-20 border-b border-borda bg-cartao/95 backdrop-blur">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
+        <Link href="/" className="flex items-center gap-2.5">
+          <I.Marca className="h-9 w-9" />
+          <span className="text-xl font-bold tracking-tight">DuoAI</span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {aFalhar.length > 0 && (
+            <Link
+              href="/"
+              title={aFalhar.map((c) => c.name).join(" · ")}
+              className="grid h-9 w-9 place-items-center rounded-xl bg-aviso-tenue text-aviso"
+            >
+              <I.Atencao className="h-[18px] w-[18px]" />
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={recarregar}
+            aria-label="Recarregar"
+            className="grid h-9 w-9 place-items-center rounded-xl border border-borda hover:bg-fundo"
+          >
+            <I.Recarregar className={`h-[18px] w-[18px] ${aCarregar ? "animate-spin" : ""}`} />
+          </button>
+          <span className="flex items-center gap-1.5 pl-1">
+            <span className={`h-2 w-2 rounded-full ${dados ? "bg-marca" : "bg-tenue"}`} />
+            <span className="etiqueta !text-marca">{dados ? "online" : "a ligar"}</span>
           </span>
-          <div className="leading-tight">
-            <p className="text-sm font-bold">DuoAI</p>
-            <p className="text-[11px] text-suave">FourLife</p>
-          </div>
         </div>
-        <Pastilha ok={dados ? aFalhar.length === 0 : null}>
-          {!dados ? "a ler" : aFalhar.length === 0 ? "tudo de pé" : `${aFalhar.length} com problema`}
-        </Pastilha>
       </div>
-      <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-2 pb-1">
-        {PAGINAS.map((p) => {
-          const activa = onde === p.caminho;
+    </header>
+  );
+}
+
+function Navegacao() {
+  const [onde] = useLocation();
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-borda bg-cartao/97 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      <div className="sem-barra mx-auto flex max-w-5xl gap-1 overflow-x-auto px-2 py-1.5">
+        {PAGINAS.map(({ caminho, nome, icone: Icone }) => {
+          const activa = onde === caminho;
           return (
             <Link
-              key={p.caminho}
-              href={p.caminho}
-              className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                activa ? "bg-marca text-white" : "text-suave hover:bg-fundo"
+              key={caminho}
+              href={caminho}
+              className={`flex min-w-[74px] shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-1.5 transition-colors ${
+                activa ? "text-marca" : "text-tenue hover:text-suave"
               }`}
             >
-              {p.nome}
+              <Icone className="h-[22px] w-[22px]" />
+              <span className="whitespace-nowrap text-[11px] font-medium leading-none">{nome}</span>
+              <span className={`h-0.5 w-6 rounded-full ${activa ? "bg-marca" : "bg-transparent"}`} />
             </Link>
           );
         })}
-      </nav>
-    </header>
+      </div>
+    </nav>
   );
 }
 
 export function App() {
   return (
     <div className="min-h-full">
-      <Cabecalho />
-      <main className="mx-auto max-w-6xl px-4 py-5 pb-16">
+      <Topo />
+      <main className="mx-auto max-w-5xl px-4 py-5 pb-32">
         <Switch>
-          <Route path="/" component={Painel} />
-          <Route path="/diario" component={Diario} />
-          <Route path="/leads" component={Leads} />
-          <Route path="/prospecao" component={Prospecao} />
-          <Route path="/relatorios" component={Relatorios} />
+          {PAGINAS.map(({ caminho, pagina }) => (
+            <Route key={caminho} path={caminho} component={pagina} />
+          ))}
           <Route>
-            <p className="py-16 text-center text-sm text-suave">Esta página não existe.</p>
+            <p className="py-20 text-center text-sm text-suave">Esta página não existe.</p>
           </Route>
         </Switch>
       </main>
+      <Navegacao />
     </div>
   );
 }
