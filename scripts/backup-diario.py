@@ -2,12 +2,12 @@
 """
 Cópia diária dos leads e das comunicações, para fora do Railway.
 
-Isto existe porque a base já se perdeu duas vezes. A primeira fui eu que a
-destruí, ao reiniciar o Postgres sem verificar que não tinha volume. A segunda
-perdeu-se num restauro, e a única cópia era um ficheiro num portátil que também
-se perdeu.
+Isto existe porque a base já se perdeu duas vezes — as duas pela mesma razão, um
+Postgres a correr sem disco permanente. O disco está montado desde 11 de setembro
+de 2026 e essa causa está fechada. Mas o disco protege de um reinício, não de um
+engano, e uma cópia que ninguém faz não é uma cópia.
 
-Guarda dois ficheiros com a data no nome, e nunca sobrescreve o de outro dia:
+Guarda três ficheiros com a data no nome, e nunca sobrescreve o de outro dia:
 
     fourlife-leads-AAAA-MM-DD.csv     — para abrir e ler
     fourlife-leads-AAAA-MM-DD.json    — todos os campos, para restaurar
@@ -16,14 +16,17 @@ Guarda dois ficheiros com a data no nome, e nunca sobrescreve o de outro dia:
     python3 backup-diario.py                    # guarda na pasta actual
     python3 backup-diario.py ~/Drive/fourlife   # guarda onde quiseres
 
+Precisa da chave do painel em DUOAI_CHAVE. Ver duoai.py.
+
 ## Para correr sozinho todos os dias
 
 macOS ou Linux — `crontab -e` e acrescenta (todos os dias às 23h):
 
-    0 23 * * * /usr/bin/python3 /caminho/para/backup-diario.py /caminho/para/pasta
+    0 23 * * * DUOAI_CHAVE="..." /usr/bin/python3 /caminho/backup-diario.py /caminho/pasta
 
 Windows — Agendador de Tarefas, tarefa diária, programa `python`, argumentos o
-caminho do script e da pasta.
+caminho do script e da pasta, com DUOAI_CHAVE nas variáveis de ambiente do
+utilizador.
 
 **Aponta a pasta para dentro do Drive, Dropbox ou OneDrive.** Uma cópia no mesmo
 computador não é uma cópia: é o mesmo disco a poder falhar duas vezes.
@@ -34,29 +37,23 @@ import datetime
 import json
 import os
 import sys
-import urllib.error
-import urllib.request
 
-BASE = "https://api-server-production-20c2.up.railway.app/api"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from duoai import confirmar_ligacao, pedir  # noqa: E402
 
 CAMPOS = [
     "id", "businessName", "city", "niche", "tier", "score",
     "phone", "whatsapp", "email", "website", "address",
-    "stage", "source", "sourceQuery",
+    "stage", "source", "sourceQuery", "googlePlaceId",
     "lastContactedAt", "ultimoWhatsApp", "optOutAt",
 ]
-
-
-def buscar(caminho):
-    with urllib.request.urlopen(f"{BASE}{caminho}", timeout=180) as r:
-        return json.loads(r.read().decode("utf-8"))
 
 
 def lista_de(dados, *chaves):
     if isinstance(dados, list):
         return dados
     for k in chaves:
-        v = dados.get(k)
+        v = (dados or {}).get(k)
         if isinstance(v, list):
             return v
     return []
@@ -67,20 +64,14 @@ def main():
     os.makedirs(pasta, exist_ok=True)
     hoje = datetime.date.today().isoformat()
 
-    try:
-        leads = lista_de(buscar("/leads?limit=5000"), "leads", "data")
-        coms = lista_de(buscar("/communications?limit=20000"), "communications", "data")
-    except urllib.error.URLError as e:
-        print(f"não consegui falar com o painel: {e}")
-        return 1
+    confirmar_ligacao()
+    leads = lista_de(pedir("/api/leads?limit=20000", timeout=300), "leads", "data")
+    coms = lista_de(pedir("/api/communications?limit=50000", timeout=300), "communications", "data")
 
-    """
-    Uma base vazia nunca sobrescreve nada.
-
-    Se o painel responder com zero leads é muito mais provável que algo esteja em
-    baixo do que a operação ter desaparecido — e uma cópia de zero leads gravada por
-    cima da de ontem é pior do que não haver cópia nenhuma.
-    """
+    # Uma base vazia nunca sobrescreve nada. Se o painel responder com zero leads
+    # é muito mais provável que algo esteja em baixo do que a operação ter
+    # desaparecido — e uma cópia de zero gravada por cima da de ontem é pior do
+    # que não haver cópia nenhuma.
     if not leads:
         print("o painel devolveu zero leads — nada foi gravado.")
         print("verifica o api-server no Railway antes de te preocupares com a base.")
