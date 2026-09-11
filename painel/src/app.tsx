@@ -4,6 +4,7 @@ import { usarDados } from "./lib/usar-dados";
 import * as api from "./lib/api";
 import * as I from "./componentes/icones";
 import { SeloWhatsApp } from "./componentes/selo-whatsapp";
+import { Four4AI } from "./componentes/four4ai";
 import { Painel } from "./paginas/painel";
 import { Diario } from "./paginas/diario";
 import { Worklab } from "./paginas/worklab";
@@ -46,7 +47,7 @@ const MENU: { seccao: string; itens: Pagina[] }[] = [
   {
     seccao: "Ferramentas",
     itens: [
-      { caminho: "/duoai", nome: "DuoAI", icone: I.Robo, pagina: Assistente },
+      { caminho: "/four4ai", nome: "Four4AI", icone: I.Robo, pagina: Assistente },
       { caminho: "/worklab", nome: "Base Worklab", icone: I.Enviar, pagina: Worklab },
       { caminho: "/caixa", nome: "Inbox", icone: I.Caixa, pagina: CaixaDeEntrada },
       { caminho: "/transcricao", nome: "Transcrição", icone: I.Microfone, pagina: Transcricao },
@@ -161,7 +162,7 @@ function Topo({ abrir }: { abrir: () => void }) {
           </button>
           <div className="min-w-0">
             <h1 className="titulo truncate text-xl font-bold leading-tight">
-              {actual?.nome ?? "DuoAI"}
+              {actual?.nome ?? "Four4AI"}
             </h1>
             <p className="truncate text-xs text-suave">FourLife · Saúde Ocupacional e SST</p>
           </div>
@@ -199,7 +200,7 @@ export function App() {
     <div className="min-h-full lg:pl-[264px]">
       <Lateral aberta={menuAberto} fechar={() => definirMenuAberto(false)} />
       <Topo abrir={() => definirMenuAberto(true)} />
-      <main className="mx-auto max-w-6xl px-4 py-5 pb-16 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 py-5 pb-28 sm:px-6">
         <Switch>
           {TODAS.map(({ caminho, pagina }) => (
             <Route key={caminho} path={caminho} component={pagina} />
@@ -209,6 +210,7 @@ export function App() {
           </Route>
         </Switch>
       </main>
+      <Four4AI />
     </div>
   );
 }

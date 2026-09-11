@@ -240,6 +240,83 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
   );
 }
 
+/* ------------------------------------------------- o diálogo de download */
+
+function Download({
+  filtros,
+  quantos,
+  aoFechar,
+  painelDeFiltros,
+}: {
+  filtros: api.FiltrosDeExportacao;
+  quantos: number;
+  aoFechar: () => void;
+  painelDeFiltros: React.ReactNode;
+}) {
+  const [aBaixar, definirABaixar] = useState(false);
+  const [erro, definirErro] = useState<string | null>(null);
+  const [guardado, definirGuardado] = useState(false);
+
+  async function guardar() {
+    definirErro(null);
+    definirABaixar(true);
+    try {
+      const blob = await api.exportarLeads(filtros);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fourlife-leads-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      definirGuardado(true);
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    } finally {
+      definirABaixar(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center sm:p-6"
+      onClick={aoFechar}
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-start justify-between gap-3 border-b border-borda px-4 py-3">
+          <div>
+            <h2 className="titulo font-bold">Baixar lista</h2>
+            <p className="text-xs text-suave">Escolhe o que entra no ficheiro antes de guardar.</p>
+          </div>
+          <button type="button" onClick={aoFechar} className="etiqueta shrink-0">
+            fechar
+          </button>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-4">{painelDeFiltros}</div>
+
+        <div className="border-t border-borda p-4">
+          {erro && (
+            <div className="mb-3">
+              <Aviso tom="erro">Não foi possível baixar: {erro}</Aviso>
+            </div>
+          )}
+          <p className="mb-2 text-sm">
+            <b className="numero text-lg">{numero(quantos)}</b>{" "}
+            {quantos === 1 ? "empresa entra no ficheiro" : "empresas entram no ficheiro"}
+          </p>
+          <Botao onClick={guardar} disabled={aBaixar} className="w-full">
+            <I.Descarregar className="h-4 w-4" />
+            {aBaixar ? "A preparar a folha de cálculo…" : guardado ? "Guardar outra vez" : "Guardar ficheiro"}
+          </Botao>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ página */
 
 export function Leads() {
@@ -259,8 +336,7 @@ export function Leads() {
   const [quantos, definirQuantos] = useState(50);
   const [aberto, definirAberto] = useState<api.Lead | null>(null);
   const [filtrosAbertos, definirFiltrosAbertos] = useState(false);
-  const [aBaixar, definirABaixar] = useState(false);
-  const [erroDoDownload, definirErroDoDownload] = useState<string | null>(null);
+  const [downloadAberto, definirDownloadAberto] = useState(false);
 
   const filtros: api.FiltrosDeExportacao = {
     period: periodo,
@@ -295,25 +371,6 @@ export function Leads() {
       );
     });
   }, [lista.dados, procura, cidades, setores, tiers, contacto, site, scoreMin, naoContactados]);
-
-  async function baixar() {
-    definirErroDoDownload(null);
-    definirABaixar(true);
-    try {
-      const blob = await api.exportarLeads(filtros);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `duoai-leads-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      await exportacao.recarregar();
-    } catch (e) {
-      definirErroDoDownload(e instanceof Error ? e.message : String(e));
-    } finally {
-      definirABaixar(false);
-    }
-  }
 
   const nFiltros =
     cidades.length + setores.length + tiers.length + contacto.length + (site ? 1 : 0) + (scoreMin ? 1 : 0);
@@ -443,9 +500,9 @@ export function Leads() {
 
       <Cartao>
         <div className="flex flex-wrap items-center gap-2">
-          <Botao variante="contorno" onClick={baixar} disabled={aBaixar}>
+          <Botao variante="contorno" onClick={() => definirDownloadAberto(true)}>
             <I.Descarregar className="h-4 w-4" />
-            {aBaixar ? "a preparar a folha…" : "Baixar lista"}
+            Baixar lista
           </Botao>
           <span className="text-xs text-suave">
             {exportacao.dados?.at
@@ -455,12 +512,6 @@ export function Leads() {
                 : "Ainda não houve nenhum download — desta vez sai a base toda."}
           </span>
         </div>
-        {erroDoDownload && (
-          <div className="mt-3">
-            <Aviso tom="erro">Não foi possível baixar: {erroDoDownload}</Aviso>
-          </div>
-        )}
-
         <div className="relative mt-3">
           <I.Lupa className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
           <input
@@ -544,6 +595,18 @@ export function Leads() {
       </div>
 
       {aberto && <Copy lead={aberto} aoFechar={() => definirAberto(null)} />}
+
+      {downloadAberto && (
+        <Download
+          filtros={filtros}
+          quantos={filtrados.length}
+          painelDeFiltros={painelDeFiltros}
+          aoFechar={() => {
+            definirDownloadAberto(false);
+            void exportacao.recarregar();
+          }}
+        />
+      )}
     </div>
   );
 }

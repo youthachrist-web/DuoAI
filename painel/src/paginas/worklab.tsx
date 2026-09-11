@@ -119,7 +119,7 @@ export function Worklab() {
     <div className="space-y-4">
       <Cabecalho
         titulo="Base Worklab · B2C"
-        descricao="Envia a planilha exportada do Worklab. O DuoAI lê nome, telefone, último exame e queixa, escolhe o pack e escreve a mensagem — tu revês e disparas pelo teu WhatsApp."
+        descricao="Envia a planilha exportada do Worklab. O Four4AI lê nome, telefone, último exame e queixa, escolhe o pack e escreve a mensagem — tu revês e disparas pelo teu WhatsApp."
       />
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}

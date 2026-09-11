@@ -100,7 +100,7 @@ export function CaixaDeEntrada() {
           />
           <input
             className={`${campo} mt-2`}
-            placeholder="Instrução para o DuoAI (opcional) — ex: responder com interesse mas pedir mais detalhes"
+            placeholder="Instrução para o Four4AI (opcional) — ex: responder com interesse mas pedir mais detalhes"
             value={recebido.instruction}
             onChange={(e) => mudar("instruction")(e.target.value)}
           />

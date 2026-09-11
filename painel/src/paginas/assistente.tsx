@@ -55,7 +55,7 @@ export function Assistente() {
   return (
     <div className="space-y-4">
       <Cabecalho
-        titulo="DuoAI"
+        titulo="Four4AI"
         descricao="O cérebro operacional da FourLife. Conhece a base, os leads e o que já foi feito."
         accao={
           <div className="flex gap-2">
@@ -132,7 +132,7 @@ export function Assistente() {
       <Cartao semPadding>
         <div className="max-h-[58vh] min-h-[220px] space-y-3 overflow-y-auto p-4">
           {!falas.length ? (
-            <Vazio>Sem conversas ainda. As tuas conversas com o DuoAI ficam guardadas aqui.</Vazio>
+            <Vazio>Sem conversas ainda. As tuas conversas com o Four4AI ficam guardadas aqui.</Vazio>
           ) : (
             falas.map((f, i) => (
               <div key={i} className={f.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -159,7 +159,7 @@ export function Assistente() {
           >
             <input
               className={campo}
-              placeholder="Pergunta ao DuoAI…"
+              placeholder="Pergunta ao Four4AI…"
               value={texto}
               onChange={(e) => definirTexto(e.target.value)}
               disabled={aResponder}
