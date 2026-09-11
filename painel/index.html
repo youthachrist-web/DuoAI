@@ -8,6 +8,24 @@
   </head>
   <body>
     <div id="raiz"></div>
+    <script>
+      /* O painel antigo instalava-se como app e guardava-se a si próprio. Sem isto,
+         o telemóvel continua a mostrar o que tem em cache e nunca chega ao servidor.
+         Corre antes de tudo o resto, e só recarrega se havia mesmo algo para tirar. */
+      (function () {
+        if (!("serviceWorker" in navigator)) return;
+        navigator.serviceWorker.getRegistrations().then(function (registos) {
+          if (!registos.length) return;
+          Promise.all(registos.map(function (r) { return r.unregister(); }))
+            .then(function () {
+              return "caches" in window
+                ? caches.keys().then(function (n) { return Promise.all(n.map(function (c) { return caches.delete(c); })); })
+                : null;
+            })
+            .then(function () { window.location.reload(); });
+        }).catch(function () {});
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -152,6 +152,16 @@ createServer(async (req, res) => {
     return res.end(JSON.stringify({ ok: true }));
   }
 
+  // O service worker também passa sem senha, e por uma razão precisa: o browser
+  // vai buscá-lo por sua conta, fora de qualquer sessão, para ver se há versão
+  // nova. Se lhe respondêssemos com a página de entrada, ele recusava o ficheiro
+  // por não ser JavaScript e o service worker antigo ficava lá para sempre, a
+  // servir o painel de antes a partir do cache do telemóvel. Não revela nada:
+  // este ficheiro só apaga caches e se desregista.
+  if (caminhoPedido === "/sw.js") {
+    return servir(res, join(RAIZ, "sw.js"), "no-cache");
+  }
+
   const cookies = lerCookies(req.headers.cookie);
   const comBilhete = !SENHA || bilheteValido(cookies);
   const comChave = CHAVE && igual(req.headers["x-chave"] ?? "", CHAVE);
