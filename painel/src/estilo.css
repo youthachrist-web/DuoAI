@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+/* Os nomes aqui geram as classes: --color-marca dá bg-marca, text-marca, border-marca.
+   É a forma do Tailwind v4 — a sintaxe bg-[--color-marca] da v3 não gera nada. */
+@theme {
+  --color-marca: #0F766E;
+  --color-marca-clara: #14B8A6;
+  --color-fundo: #F6F7F9;
+  --color-cartao: #FFFFFF;
+  --color-borda: #E3E6EB;
+  --color-texto: #14181F;
+  --color-suave: #667085;
+  --color-alerta: #B42318;
+  --color-aviso: #B54708;
+  --color-bom: #067647;
+}
+
+/* O tema escuro redefine as mesmas variáveis. As classes não mudam. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-marca: #14B8A6;
+    --color-marca-clara: #2DD4BF;
+    --color-fundo: #0D1117;
+    --color-cartao: #161B22;
+    --color-borda: #2A313C;
+    --color-texto: #E6EDF3;
+    --color-suave: #9198A1;
+    --color-alerta: #FF7B72;
+    --color-aviso: #E3B341;
+    --color-bom: #3FB950;
+  }
+}
+
+html, body, #raiz { height: 100%; }
+body {
+  margin: 0;
+  background: var(--color-fundo);
+  color: var(--color-texto);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
