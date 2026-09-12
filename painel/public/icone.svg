@@ -2,7 +2,7 @@
   <rect width="512" height="512" fill="#FFFFFF"/>
   <!-- O quatro do logótipo: diagonal larga, barra travessa e haste, tudo com o
        mesmo peso e terminações direitas, como na marca. -->
-  <path d="M300 88 L300 424" stroke="#3FBDD6" stroke-width="70" stroke-linecap="butt"/>
-  <path d="M300 88 L96 302 L400 302" fill="none" stroke="#3FBDD6" stroke-width="70"
+  <path d="M300 88 L300 424" stroke="#3FBDD6" stroke-width="82" stroke-linecap="butt"/>
+  <path d="M300 88 L96 302 L400 302" fill="none" stroke="#3FBDD6" stroke-width="82"
         stroke-linejoin="round" stroke-linecap="butt"/>
 </svg>

@@ -39,6 +39,9 @@ const TIPOS = {
   ".webp": "image/webp",
   ".ico": "image/x-icon",
   ".woff2": "font/woff2",
+  ".woff": "font/woff",
+  ".otf": "font/otf",
+  ".ttf": "font/ttf",
 };
 
 /* ------------------------------------------------------------- a porta */
@@ -212,6 +215,17 @@ createServer(async (req, res) => {
   } catch {
     /* cai para o index: as rotas do painel vivem no browser */
   }
+
+  /* Um caminho com extensão é um ficheiro, não uma rota do painel. Se não
+     existe, responde-se 404 em vez de devolver o index disfarçado de ficheiro:
+     senão o browser tenta ler HTML como se fosse uma letra ou uma imagem e
+     enche a consola de erros. É o que acontece com a Ragick enquanto o ficheiro
+     dela não estiver em public/tipos/. */
+  if (/\.[a-z0-9]{2,5}$/i.test(pedido)) {
+    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+    return res.end("não existe");
+  }
+
   return servir(res, join(RAIZ, "index.html"), "no-cache");
 }).listen(PORTA, () => {
   console.log(`painel em :${PORTA} — API em ${API || "(por definir)"} — senha ${SENHA ? "activa" : "DESLIGADA"}`);

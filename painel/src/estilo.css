@@ -1,10 +1,45 @@
 @import "tailwindcss";
 
-/* A Outfit é o mais perto que há, sem custo, da geométrica pesada da marca:
-   mesma construção circular e as mesmas terminações direitas. Serve os títulos,
-   os números e o logótipo; o corpo fica em fonte de sistema, que lê melhor em
-   linhas longas e não faz esperar por nada. */
-@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap");
+/*
+ * A letra dos títulos, dos números e do logótipo.
+ *
+ * A que o Frederico escolheu é a Ragick, que é paga e vem em TTF/OTF. Assim que
+ * o ficheiro estiver em public/tipos/, ela entra sozinha e não é preciso mexer
+ * em código nenhum — está primeiro na lista e ganha a quem vier a seguir.
+ *
+ * Enquanto não estiver lá, entra a Rubik, que é a mais perto que há sem custo:
+ * a mesma construção geométrica e pesada, os mesmos cantos levemente
+ * arredondados, o mesmo "g" de um andar com o gancho e o mesmo "a" de dois
+ * andares. Vem do nosso próprio servidor e não do Google: são 35 kB num único
+ * ficheiro variável que cobre todos os pesos, e assim o painel não fica à espera
+ * de um sítio de fora para desenhar os títulos.
+ *
+ * O corpo do texto fica em fonte de sistema, que lê melhor em linhas longas e
+ * não faz esperar por nada.
+ */
+@font-face {
+  font-family: "Ragick";
+  /* Um endereço só, e não três: cada um que não exista é um 404 na consola a
+     cada carregamento. O ficheiro tem de ser .woff2 — o LEIA-ME ao lado tem a
+     linha que converte o .otf ou o .ttf da compra. */
+  src:
+    local("Ragick"),
+    url("/tipos/ragick.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  /* Mostra já a de reserva e troca quando a Ragick chegar: sem isto, os títulos
+     ficam invisíveis enquanto o ficheiro não carrega. */
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Rubik";
+  src: url("/tipos/rubik.woff2") format("woff2");
+  /* Ficheiro variável: um só cobre de 300 a 900. */
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
 
 @theme {
   /* As duas cores da FourLife, tiradas do logótipo. */
@@ -33,7 +68,7 @@
   --color-aviso-tenue: #FDF4E4;
   --color-bom: #2E9E54;
 
-  --font-titulo: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-titulo: "Ragick", "Rubik", ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 

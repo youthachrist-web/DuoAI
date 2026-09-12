@@ -229,12 +229,12 @@ export const Trofeu = (p: Props) => (
 /** O quatro do logótipo, sozinho. Serve de ícone e de marca pequena. */
 export const Quatro = ({ className = "h-9 w-9" }: { className?: string }) => (
   <svg viewBox="0 0 512 512" className={className} aria-hidden>
-    <path d="M300 88 L300 424" stroke="currentColor" strokeWidth={70} />
+    <path d="M300 88 L300 424" stroke="currentColor" strokeWidth={82} />
     <path
       d="M300 88 L96 302 L400 302"
       fill="none"
       stroke="currentColor"
-      strokeWidth={70}
+      strokeWidth={82}
       strokeLinejoin="round"
     />
   </svg>
@@ -251,7 +251,7 @@ export const Logotipo = ({ className = "" }: { className?: string }) => (
       fou
       <span className="relative">
         r
-        <Quatro className="absolute -top-[0.44em] left-[0.02em] h-[0.54em] w-[0.54em] text-turquesa" />
+        <Quatro className="absolute -top-[0.46em] left-[0.01em] h-[0.58em] w-[0.58em] text-turquesa" />
       </span>
     </span>
     <span className="text-lima">Life</span>

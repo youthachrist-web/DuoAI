@@ -15,6 +15,10 @@
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F3F6F6" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0A1314" />
 
+    <!-- A letra dos títulos começa a descarregar ao mesmo tempo que o CSS, em
+         vez de esperar por ele: sem isto, os títulos aparecem primeiro na letra
+         de sistema e saltam quando ela chega. -->
+    <link rel="preload" href="/tipos/rubik.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icone.svg" type="image/svg+xml" />
     <link rel="icon" href="/icone-192.png" sizes="192x192" type="image/png" />
