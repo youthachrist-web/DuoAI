@@ -3,28 +3,32 @@ import { usarDados } from "../lib/usar-dados";
 import * as api from "../lib/api";
 import * as I from "../componentes/icones";
 import { data, dinheiro, numero } from "../lib/formatar";
-import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Vazio } from "../componentes/base";
+import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio } from "../componentes/base";
 
-/** Os números do dia, por cima do texto do relatório. */
-function Numeros() {
-  const resumo = usarDados(api.resumo, { intervaloMs: 120_000 });
-  const facetas = usarDados(api.facetas, { intervaloMs: 120_000 });
-  const r = resumo.dados;
-  const f = facetas.dados;
-  if (!r && !f) return null;
+/**
+ * Os números do relatório escolhido, não os de agora.
+ *
+ * Cada relatório guarda os seus, e é isso que faz sentido: ao abrir o de
+ * ontem, o que interessa é o que estava em cima da mesa ontem. Mostrar os
+ * números de hoje ao lado do texto de ontem faz o texto parecer errado.
+ */
+function Numeros({ relatorio }: { relatorio?: api.Relatorio }) {
+  const n = api.numerosDoRelatorio(relatorio?.metricsJson);
+  if (!relatorio) return null;
   const celulas: [string, string][] = [
-    ["Novos 24h", numero(f?.today)],
-    ["Leads", numero(r?.totalLeads ?? f?.total)],
-    ["Propostas", numero(r?.proposalsSent)],
-    ["Pagos", numero(r?.paymentsDone)],
-    ["Receita", dinheiro(r?.revenueMonth)],
+    ["Leads", numero(n.totalLeads)],
+    ["Novos 24h", numero(n.newLeads24h)],
+    ["Propostas", numero(n.proposalsSent)],
+    ["Pagos", numero(n.contractsPaid)],
+    ["Receita", dinheiro(n.revenuePaid)],
+    ["MRR", dinheiro(n.mrr)],
   ];
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
       {celulas.map(([rotulo, valor]) => (
         <div key={rotulo} className="rounded-2xl border border-borda bg-cartao p-3.5">
           <p className="etiqueta">{rotulo}</p>
-          <p className="mt-1 text-xl font-bold tabular-nums">{valor}</p>
+          <p className="numero mt-1 text-xl leading-none">{valor}</p>
         </div>
       ))}
     </div>
@@ -69,7 +73,6 @@ export function Relatorios() {
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
 
-      <Numeros />
 
       {lista.aCarregar && !lista.dados ? (
         <ACarregar />
@@ -93,13 +96,26 @@ export function Relatorios() {
                   }`}
                 >
                   {data(r.reportDate)}
+                  <span className="mt-0.5 block text-[11px] font-normal opacity-70">
+                    {r.deliveryStatus === "sent" ? "Enviado por email" : "Gerado"}
+                  </span>
                 </button>
               ))}
             </div>
           )}
 
+          <Numeros relatorio={activo} />
+
           {activo && (
-            <Cartao titulo={activo.title} accao={<span className="etiqueta">{data(activo.reportDate)}</span>}>
+            <Cartao
+              titulo={activo.title}
+              accao={
+                <div className="flex items-center gap-2">
+                  {activo.deliveryStatus === "sent" && <Selo tom="bom">Email enviado</Selo>}
+                  <span className="etiqueta">{data(activo.reportDate)}</span>
+                </div>
+              }
+            >
               {/* O relatório vem em markdown do servidor. Mostra-se como texto, tal como
                   está: interpretá-lo aqui abriria a porta a HTML injectado pela base. */}
               <pre className="max-h-[65vh] overflow-auto whitespace-pre-wrap font-sans text-sm leading-relaxed">

@@ -209,6 +209,23 @@ export const Estrela = (p: Props) => (
   </Svg>
 );
 
+/** O vídeo da proposta, que é o que a clínica abre antes de responder. */
+export const Video = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M10.2 8.8 16 12l-5.8 3.2z" />
+  </Svg>
+);
+
+/** A proposta ganha. */
+export const Trofeu = (p: Props) => (
+  <Svg {...p}>
+    <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+    <path d="M7 5.5H4.5V8a3 3 0 0 0 3 3M17 5.5h2.5V8a3 3 0 0 1-3 3" />
+    <path d="M12 14v3.5M9 20.5h6M10 17.5h4" />
+  </Svg>
+);
+
 /** O quatro do logótipo, sozinho. Serve de ícone e de marca pequena. */
 export const Quatro = ({ className = "h-9 w-9" }: { className?: string }) => (
   <svg viewBox="0 0 512 512" className={className} aria-hidden>

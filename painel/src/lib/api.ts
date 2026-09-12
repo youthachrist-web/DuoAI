@@ -265,9 +265,17 @@ export const resumoLinkedin = () => pedir<ResumoLinkedin>("/control/resumo-linke
 export type Proposta = {
   id: number;
   leadId: number | null;
-  packageName?: string | null;
+  /** A empresa e o setor vêm já juntos na proposta: não é preciso ir ao lead. */
+  businessName?: string | null;
+  niche?: string | null;
+  packageType?: string | null;
+  /** A adesão. Zero quer dizer sem custo — a receita é por volume referenciado. */
+  value?: number | null;
   status: string;
-  totalValue?: number | null;
+  sentAt?: string | null;
+  videoUrl?: string | null;
+  videoOpenedAt?: string | null;
+  pdfUrl?: string | null;
   createdAt?: string;
 };
 export const propostas = () => pedir<Proposta[]>("/proposals");
@@ -277,19 +285,63 @@ export const enviarProposta = (id: number, corpo?: { email: string }) =>
 export type Contrato = {
   id: number;
   leadId: number | null;
+  businessName?: string | null;
+  ownerName?: string | null;
+  packageType?: string | null;
   status: string;
-  monthlyValue?: number | null;
+  /** O que entra por mês. O servidor chama-lhe monthlyFee, não monthlyValue. */
+  monthlyFee?: number | null;
   setupFee?: number | null;
   createdAt?: string;
 };
 export const contratos = () => pedir<Contrato[]>("/contracts");
-export const linkDePagamento = (id: number) =>
-  post<{ url?: string; error?: string }>(`/contracts/${id}/checkout-session`);
-export const confirmarPagamento = (id: number) => post<unknown>(`/contracts/${id}/verify-payment`);
+
+/**
+ * Pede à Stripe uma sessão de pagamento para este contrato.
+ *
+ * Os dois endereços de regresso vão no pedido porque é a Stripe que traz o
+ * cliente de volta: o de sucesso leva o `session_id`, que é o que prova o
+ * pagamento, e o de cancelamento serve para dizer que nada foi cobrado.
+ */
+export const linkDePagamento = (id: number, regresso: { successUrl: string; cancelUrl: string }) =>
+  post<{ checkoutUrl?: string; error?: string }>(`/contracts/${id}/checkout-session`, regresso);
+
+/** Confirma com a Stripe, pela sessão, que o dinheiro entrou mesmo. */
+export const confirmarPagamento = (id: number, checkoutSessionId: string) =>
+  post<{ paid?: boolean }>(`/contracts/${id}/verify-payment`, { checkoutSessionId });
 
 /* ------------------------------------------------------------ relatórios */
 
-export type Relatorio = { id: number; reportDate: string; title: string; markdown: string };
+export type Relatorio = {
+  id: number;
+  reportDate: string;
+  title: string;
+  markdown: string;
+  /** Os números do dia do relatório, guardados como texto JSON pelo servidor. */
+  metricsJson?: string | null;
+  deliveryStatus?: string | null;
+  generatedAt?: string | null;
+  sentAt?: string | null;
+};
+
+export type NumerosDoRelatorio = {
+  totalLeads?: number;
+  newLeads24h?: number;
+  proposalsSent?: number;
+  contractsPaid?: number;
+  revenuePaid?: number;
+  mrr?: number;
+};
+
+/** Lê os números do relatório. Se o JSON vier estragado, fica vazio em vez de rebentar. */
+export function numerosDoRelatorio(bruto?: string | null): NumerosDoRelatorio {
+  if (!bruto) return {};
+  try {
+    return JSON.parse(bruto) as NumerosDoRelatorio;
+  } catch {
+    return {};
+  }
+}
 export const relatorios = () => pedir<Relatorio[]>("/reports");
 export const gerarRelatorio = () => post<Relatorio>("/reports/generate", {});
 
@@ -297,15 +349,23 @@ export const gerarRelatorio = () => post<Relatorio>("/reports/generate", {});
 
 export type Lembrete = {
   id: number;
-  leadId?: number | null;
+  /** O destinatário no WhatsApp, no formato 55DDNNNNNNNNN@c.us. */
+  chatId?: string;
+  chatName?: string | null;
   message?: string;
-  scheduledFor?: string;
-  cadence?: string;
-  active?: boolean;
+  reminderDate?: string;
+  recurrenceType?: "none" | "daily" | "weekly" | "monthly" | "minutes" | string;
+  recurrenceInterval?: number | null;
+  isActive?: boolean;
+  createdAt?: string;
 };
 export const lembretes = () => pedir<Lembrete[]>("/reminders");
 export const criarLembrete = (dados: unknown) => post<Lembrete>("/reminders", dados);
 export const apagarLembrete = (id: number) => pedir<void>(`/reminders/${id}`, { method: "DELETE" });
+
+/** Liga e desliga o reminder sem o apagar: o texto e a data ficam guardados. */
+export const alternarLembrete = (id: number) =>
+  pedir<Lembrete>(`/reminders/${id}/toggle`, { method: "PATCH" });
 
 /* ------------------------------------------------------------ comunicações */
 

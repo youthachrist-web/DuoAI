@@ -11,7 +11,16 @@ const RECORRENCIAS = [
   { valor: "daily", nome: "Diário" },
   { valor: "weekly", nome: "Semanal" },
   { valor: "monthly", nome: "Mensal" },
+  { valor: "minutes", nome: "Por minutos" },
 ] as const;
+
+/** A unidade do intervalo, para o campo dizer de quê são os números. */
+const UNIDADES: Record<string, string> = {
+  daily: "dias",
+  weekly: "semanas",
+  monthly: "meses",
+  minutes: "minutos",
+};
 
 function quando(iso?: string | null) {
   if (!iso) return "sem data";
@@ -83,6 +92,18 @@ export function Lembretes() {
     }
   }
 
+  /* Desligar em vez de apagar: o texto e a data ficam guardados, e volta-se a
+     ligar quando for altura. Apagar é definitivo. */
+  async function alternar(id: number) {
+    definirErro(null);
+    try {
+      await api.alternarLembrete(id);
+      await lista.recarregar();
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   async function apagar(id: number) {
     if (!window.confirm("Apagar este reminder?")) return;
     try {
@@ -93,8 +114,11 @@ export function Lembretes() {
     }
   }
 
-  const activos = (lista.dados ?? []).filter((l) => l.active !== false);
-  const inactivos = (lista.dados ?? []).filter((l) => l.active === false);
+  const activos = (lista.dados ?? []).filter((l) => l.isActive !== false);
+  const inactivos = (lista.dados ?? []).filter((l) => l.isActive === false);
+  const recorrentes = (lista.dados ?? []).filter(
+    (l) => l.recurrenceType && l.recurrenceType !== "none",
+  );
   const agora = Date.now();
 
   return (
@@ -103,6 +127,22 @@ export function Lembretes() {
 
       {erro && <Aviso tom="erro">{erro}</Aviso>}
       {nota && <p className="text-sm text-bom">{nota}</p>}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {(
+          [
+            ["Ativos", activos.length],
+            ["Inativos", inactivos.length],
+            ["Recorrentes", recorrentes.length],
+            ["Total", lista.dados?.length ?? 0],
+          ] as const
+        ).map(([rotulo, valor]) => (
+          <div key={rotulo} className="rounded-2xl border border-borda bg-cartao p-3.5">
+            <p className="etiqueta">{rotulo}</p>
+            <p className="numero mt-1 text-2xl leading-none">{numero(valor)}</p>
+          </div>
+        ))}
+      </div>
 
       <Cartao titulo="Criar Reminder">
         <label className="block">
@@ -213,7 +253,7 @@ export function Lembretes() {
         ) : (
           <ul className="space-y-2">
             {activos.map((l) => {
-              const atrasado = l.scheduledFor ? new Date(l.scheduledFor).getTime() < agora : false;
+              const atrasado = l.reminderDate ? new Date(l.reminderDate).getTime() < agora : false;
               return (
                 <li
                   key={l.id}
@@ -222,12 +262,18 @@ export function Lembretes() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium leading-snug">{l.message ?? "(sem texto)"}</p>
                     <p className="mt-0.5 text-xs text-suave">
-                      {quando(l.scheduledFor)}
-                      {l.cadence && l.cadence !== "none" && ` · ${l.cadence}`}
+                      {l.chatName ? `${l.chatName} · ` : ""}
+                      {quando(l.reminderDate)}
+                      {l.recurrenceType && l.recurrenceType !== "none" && (
+                        ` · cada ${l.recurrenceInterval ?? 1} ${UNIDADES[l.recurrenceType] ?? l.recurrenceType}`
+                      )}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {atrasado && <Selo tom="aviso">Atrasado</Selo>}
+                    <Botao pequeno variante="contorno" onClick={() => void alternar(l.id)}>
+                      Desligar
+                    </Botao>
                     <Botao pequeno variante="perigo" onClick={() => apagar(l.id)}>
                       Apagar
                     </Botao>
@@ -244,8 +290,11 @@ export function Lembretes() {
           <ul className="space-y-2">
             {inactivos.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-3 text-sm text-suave">
-                <span className="truncate">{l.message}</span>
+                <span className="min-w-0 flex-1 truncate">{l.message}</span>
                 <Selo>Inativo</Selo>
+                <Botao pequeno variante="contorno" onClick={() => void alternar(l.id)}>
+                  Ligar
+                </Botao>
               </li>
             ))}
           </ul>
