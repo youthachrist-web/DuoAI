@@ -60,7 +60,9 @@ export function SeloWhatsApp() {
       className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 font-mono text-[10px] font-semibold uppercase tracking-wider ${cor}`}
     >
       <I.Conversa className={`h-3 w-3 ${aCarregar ? "animate-pulse" : ""}`} />
-      {curto}
+      {/* Nos ecrãs mais estreitos fica só o ícone: a cor já diz o que se passa, e
+          a palavra roubava o espaço ao título da página, que ficava cortado. */}
+      <span className="max-[419px]:sr-only">{curto}</span>
     </span>
   );
 }

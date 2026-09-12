@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Versão para o Android recortar em qualquer forma: o desenho vive dentro
+       dos 80% centrais, para não ser cortado num círculo. -->
+  <rect width="512" height="512" fill="#4EC8DC"/>
+  <path d="M296 150 L296 372" stroke="#FFFFFF" stroke-width="42" stroke-linecap="butt"/>
+  <path d="M296 150 L164 292 L360 292" fill="none" stroke="#FFFFFF" stroke-width="42"
+        stroke-linejoin="round" stroke-linecap="butt"/>
+</svg>

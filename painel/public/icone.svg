@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#FFFFFF"/>
+  <!-- O quatro do logótipo: diagonal larga, barra travessa e haste, tudo com o
+       mesmo peso e terminações direitas, como na marca. -->
+  <path d="M300 88 L300 424" stroke="#3FBDD6" stroke-width="70" stroke-linecap="butt"/>
+  <path d="M300 88 L96 302 L400 302" fill="none" stroke="#3FBDD6" stroke-width="70"
+        stroke-linejoin="round" stroke-linecap="butt"/>
+</svg>

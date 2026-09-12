@@ -65,7 +65,7 @@ export function Metrica({
   aguada?: ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-borda bg-cartao">
+    <div className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-borda bg-cartao">
       {/* A marca de água só existe para dar peso ao cartão; não carrega informação,
           por isso fica escondida dos leitores de ecrã. */}
       {aguada && (
@@ -76,15 +76,17 @@ export function Metrica({
           {aguada}
         </div>
       )}
-      <div className="p-5">
+      {/* Cresce para encher o cartão: numa fila de dois, o rodapé de um não fica
+          a meio do ar só porque o vizinho tem uma linha a mais. */}
+      <div className="flex-1 p-4 sm:p-5">
         <p className="etiqueta">{rotulo}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2.5">
-          <p className="numero text-[30px] leading-none">{valor}</p>
+          <p className="numero text-[26px] leading-none sm:text-[30px]">{valor}</p>
           {nota}
         </div>
       </div>
       {rodape && (
-        <div className="border-t border-borda px-5 py-2.5 text-xs text-suave">{rodape}</div>
+        <div className="border-t border-borda px-4 py-2.5 text-xs text-suave sm:px-5">{rodape}</div>
       )}
     </div>
   );

@@ -4,7 +4,7 @@
  * Sem biblioteca de propósito: são vinte e poucos traços e uma dependência a
  * menos é uma forma a menos de o painel deixar de construir. Todos herdam a cor
  * do texto e o tamanho vem da classe, para servirem tanto num botão como numa
- * turquesa de água gigante atrás de um número.
+ * marca de água gigante atrás de um número.
  */
 import type { SVGProps } from "react";
 
@@ -200,14 +200,46 @@ export const Estrela = (p: Props) => (
   </Svg>
 );
 
-/** O quatro da FourLife: turquesa por baixo, lima na haste. */
-export const Marca = ({ className = "h-9 w-9" }: { className?: string }) => (
-  <svg viewBox="0 0 40 40" className={className} aria-hidden>
-    <rect width="40" height="40" rx="12" className="fill-turquesa" />
-    <path d="M22 8v13H12.5L22 8z" fill="none" stroke="white" strokeWidth="3.2" strokeLinejoin="round" />
-    <path d="M9 21h20" stroke="white" strokeWidth="3.2" strokeLinecap="round" />
-    <path d="M22 21v11" className="stroke-lima" strokeWidth="3.2" strokeLinecap="round" />
+/** O quatro do logótipo, sozinho. Serve de ícone e de marca pequena. */
+export const Quatro = ({ className = "h-9 w-9" }: { className?: string }) => (
+  <svg viewBox="0 0 512 512" className={className} aria-hidden>
+    <path d="M300 88 L300 424" stroke="currentColor" strokeWidth={70} />
+    <path
+      d="M300 88 L96 302 L400 302"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={70}
+      strokeLinejoin="round"
+    />
   </svg>
+);
+
+/**
+ * O logótipo por extenso: "four" em turquesa, "Life" em lima, e o quatro
+ * pousado por cima do erre — que é o que faz a marca ser reconhecível de
+ * relance. O tamanho vem todo de `fontSize`, para a peça escalar inteira.
+ */
+export const Logotipo = ({ className = "" }: { className?: string }) => (
+  <span className={`titulo relative inline-flex select-none items-baseline font-extrabold leading-none tracking-tight ${className}`}>
+    <span className="relative text-turquesa">
+      fou
+      <span className="relative">
+        r
+        <Quatro className="absolute -top-[0.44em] left-[0.02em] h-[0.54em] w-[0.54em] text-turquesa" />
+      </span>
+    </span>
+    <span className="text-lima">Life</span>
+  </span>
+);
+
+/** A marca em caixa, para os sítios onde é preciso um quadrado. */
+export const Marca = ({ className = "h-9 w-9" }: { className?: string }) => (
+  <span
+    className={`grid shrink-0 place-items-center rounded-xl bg-white ${className}`}
+    aria-hidden
+  >
+    <Quatro className="h-[72%] w-[72%] text-turquesa" />
+  </span>
 );
 
 export const Microfone = (p: Props) => (

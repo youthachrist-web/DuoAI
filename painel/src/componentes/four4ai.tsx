@@ -389,7 +389,8 @@ export function Four4AI() {
       <button
         type="button"
         onClick={() => definirAberto(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full bg-turquesa py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lg shadow-turquesa/25 transition-colors hover:bg-turquesa-forte"
+        style={{ bottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
+        className="fixed right-5 z-40 flex items-center gap-2.5 rounded-full bg-turquesa py-3 pl-4 pr-5 text-sm font-semibold text-white shadow-lg shadow-turquesa/25 transition-colors hover:bg-turquesa-forte"
       >
         <I.Robo className="h-5 w-5" />
         <span className="hidden sm:inline">Precisas de alguma coisa?</span>
@@ -399,7 +400,10 @@ export function Four4AI() {
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-40 flex max-h-[80vh] flex-col overflow-hidden rounded-2xl border border-borda bg-cartao shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[400px]">
+    <div
+      style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom))", maxHeight: "min(80dvh, 620px)" }}
+      className="fixed inset-x-3 z-40 flex flex-col overflow-hidden rounded-2xl border border-borda bg-cartao shadow-2xl sm:inset-x-auto sm:right-5 sm:w-[400px]"
+    >
       <header className="flex items-center justify-between gap-3 border-b border-borda bg-barra px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-turquesa/20">

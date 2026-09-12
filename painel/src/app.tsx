@@ -67,18 +67,15 @@ function Lateral({ aberta, fechar }: { aberta: boolean; fechar: () => void }) {
   return (
     <>
       {/* No telemóvel a barra desliza por cima; o véu fecha-a ao tocar fora. */}
-      {aberta && <div className="fixed inset-0 z-30 bg-black/40 lg:hidden" onClick={fechar} />}
+      {aberta && <div className="fixed inset-0 z-[45] bg-black/40 lg:hidden" onClick={fechar} />}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col bg-barra transition-transform lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-barra transition-transform lg:translate-x-0 ${
           aberta ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center gap-2.5 px-5 py-5">
-          <I.Marca className="h-9 w-9" />
-          <span className="titulo text-[22px] font-extrabold text-white">
-            four<span className="text-lima">Life</span>
-          </span>
+        <div className="px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top))]">
+          <I.Logotipo className="text-[26px]" />
         </div>
 
         <nav className="sem-barra flex-1 overflow-y-auto px-3 pb-4">
@@ -117,7 +114,7 @@ function Lateral({ aberta, fechar }: { aberta: boolean; fechar: () => void }) {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t border-white/10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3 rounded-xl bg-barra-clara px-3 py-2.5">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-lima/20 text-sm font-bold text-lima">
               F
@@ -150,7 +147,7 @@ function Topo({ abrir }: { abrir: () => void }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-borda bg-fundo/90 backdrop-blur">
-      <div className="flex items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
+      <div className="flex items-center justify-between gap-3 px-4 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))] sm:px-6">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -164,7 +161,7 @@ function Topo({ abrir }: { abrir: () => void }) {
             <h1 className="titulo truncate text-xl font-bold leading-tight">
               {actual?.nome ?? "Four4AI"}
             </h1>
-            <p className="truncate text-xs text-suave">FourLife · Saúde Ocupacional e SST</p>
+            <p className="hidden truncate text-xs text-suave sm:block">FourLife · Saúde Ocupacional e SST</p>
           </div>
         </div>
 
@@ -200,7 +197,8 @@ export function App() {
     <div className="min-h-full lg:pl-[264px]">
       <Lateral aberta={menuAberto} fechar={() => definirMenuAberto(false)} />
       <Topo abrir={() => definirMenuAberto(true)} />
-      <main className="mx-auto max-w-6xl px-4 py-5 pb-28 sm:px-6">
+      <main className="mx-auto max-w-6xl px-4 pt-5 sm:px-6"
+        style={{ paddingBottom: "calc(7rem + env(safe-area-inset-bottom))" }}>
         <Switch>
           {TODAS.map(({ caminho, pagina }) => (
             <Route key={caminho} path={caminho} component={pagina} />

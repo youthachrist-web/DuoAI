@@ -132,7 +132,7 @@ function Interruptores({ aoMudar }: { aoMudar: () => void }) {
   async function limpar(qual: "contacts" | "reports") {
     const pergunta =
       qual === "contacts"
-        ? "Isto apaga a turquesa de «já contactado» em todos os leads. Eles voltam à fila e podem receber a mesma mensagem outra vez. Continuar?"
+        ? "Isto apaga a marca de «já contactado» em todos os leads. Eles voltam à fila e podem receber a mesma mensagem outra vez. Continuar?"
         : "Isto apaga os relatórios já gerados. Continuar?";
     if (!window.confirm(pergunta)) return;
     definirErro(null);
