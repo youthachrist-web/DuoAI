@@ -147,6 +147,13 @@ export type Lead = {
   linkedinUrl: string | null;
   employeeCount: number | null;
   optOutAt: string | null;
+  createdAt: string;
+  googleRating: number | null;
+  googleReviewCount: number | null;
+  instagramHandle: string | null;
+  /** O que a análise do site apontou, em JSON — o servidor manda-o como texto. */
+  websiteWeaknesses: string | null;
+  source: string | null;
 };
 
 export type Facetas = {
@@ -431,7 +438,7 @@ export async function enviarBaseWorklab(
 /* ------------------------------------------------- exportação dos leads */
 
 export type FiltrosDeExportacao = {
-  period?: "today" | "week" | "month" | "all" | "new";
+  period?: "today" | "week" | "month" | "all" | "since-last";
   cidades?: string[];
   setores?: string[];
   has?: string[];
@@ -452,23 +459,21 @@ export function parametrosDeExportacao(f: FiltrosDeExportacao): string {
   return p.toString();
 }
 
+/** Os dois formatos que o servidor sabe montar. */
+export type FormatoDeExportacao = "csv" | "docx";
+
 /**
- * Pede ao servidor a folha de cálculo já filtrada e devolve-a como ficheiro.
+ * O endereço da exportação já filtrada, para o descarregador ir buscá-la.
  *
  * A exportação é do servidor e não do browser de propósito: ele conhece a base
  * inteira, e o painel só tem em memória o que já carregou. Um ficheiro montado
  * aqui seria uma lista mais curta com o mesmo nome — a pior espécie de erro.
+ *
+ * O CSV é a folha de cálculo; o Word é o dossier por empresa, com os contactos
+ * e os sinais escritos por extenso, que é o que se leva para uma reunião.
  */
-export async function exportarLeads(f: FiltrosDeExportacao): Promise<Blob> {
-  const r = await fetch(`${BASE}/leads/export.csv?${parametrosDeExportacao(f)}`);
-  if (r.status === 401) {
-    window.location.reload();
-    throw new ErroDaApi(401, "sessão terminada");
-  }
-  if (!r.ok) throw new ErroDaApi(r.status, `não consegui baixar: o servidor respondeu ${r.status}`);
-  const blob = await r.blob();
-  if (blob.size === 0) throw new ErroDaApi(204, "o servidor devolveu um ficheiro vazio");
-  return blob;
+export function enderecoDaExportacao(formato: FormatoDeExportacao, f: FiltrosDeExportacao): string {
+  return `${BASE}/leads/export.${formato}?${parametrosDeExportacao(f)}`;
 }
 
 /** Regista o que o lead pediu. Fica na ficha dele e muda a copy seguinte. */

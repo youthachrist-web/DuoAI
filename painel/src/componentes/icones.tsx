@@ -82,6 +82,15 @@ export const Documento = (p: Props) => (
   </Svg>
 );
 
+/** A folha de cálculo, para distinguir o CSV do dossier em Word. */
+export const Tabela = (p: Props) => (
+  <Svg {...p}>
+    <path d="M14 2.5H7A2.5 2.5 0 0 0 4.5 5v14A2.5 2.5 0 0 0 7 21.5h10a2.5 2.5 0 0 0 2.5-2.5V8z" />
+    <path d="M14 2.5V8h5.5" />
+    <path d="M8 13h2M14 13h2M8 17h2M14 17h2" />
+  </Svg>
+);
+
 export const Contrato = (p: Props) => (
   <Svg {...p}>
     <path d="M14 2.5H7A2.5 2.5 0 0 0 4.5 5v14A2.5 2.5 0 0 0 7 21.5h6" />

@@ -7,13 +7,17 @@ import { ACarregar, Aviso, Botao, Cabecalho, Cartao, Selo, Vazio, campo } from "
 import { TIPOS_DE_PEDIDO } from "../lib/nichos";
 import { janelaAberta, janelaDoSetor, textoDaJanela } from "../lib/melhores-horas";
 import { normalizarCelular, sinaisDoLead } from "../lib/telefone";
+import { buscarFicheiro, guardarFicheiro, type Destino, type Ficheiro } from "../lib/ficheiro";
 
+/* Os valores são os que o servidor entende. "since-last" tem de ser escrito
+   assim: qualquer outra palavra passa despercebida e ele devolve a base toda —
+   um ficheiro que parece o certo e não é. */
 const PERIODOS = [
-  { valor: "all", nome: "Toda a base de leads" },
+  { valor: "since-last", nome: "Novos desde o último download" },
   { valor: "today", nome: "Só os de hoje" },
   { valor: "week", nome: "Desta semana" },
   { valor: "month", nome: "Deste mês" },
-  { valor: "new", nome: "Novos desde o último download" },
+  { valor: "all", nome: "Toda a base de leads" },
 ] as const;
 
 type Periodo = (typeof PERIODOS)[number]["valor"];
@@ -137,11 +141,11 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6"
       onClick={aoFechar}
     >
       <div
-        className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
+        className="max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3 border-b border-borda px-4 py-3">
@@ -156,7 +160,7 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
           </button>
         </header>
 
-        <div className="space-y-4 p-4">
+        <div className="space-y-4 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className={`rounded-xl border px-3 py-2 text-xs leading-relaxed ${boaHora ? "border-turquesa bg-turquesa-tenue text-turquesa" : "border-borda text-suave"}`}>
             <strong>{textoDaJanela(janela)}</strong> · {janela.razao}
             {boaHora && " É boa hora agora."}
@@ -245,44 +249,66 @@ function Copy({ lead, aoFechar }: { lead: api.Lead; aoFechar: () => void }) {
 function Download({
   filtros,
   quantos,
+  activos,
+  limparFiltros,
   aoFechar,
   painelDeFiltros,
 }: {
   filtros: api.FiltrosDeExportacao;
   quantos: number;
+  /** Quantos filtros estão ligados, para se poder limpá-los daqui. */
+  activos: number;
+  limparFiltros: () => void;
   aoFechar: () => void;
   painelDeFiltros: React.ReactNode;
 }) {
-  const [aBaixar, definirABaixar] = useState(false);
+  const [aBaixar, definirABaixar] = useState<api.FormatoDeExportacao | null>(null);
   const [erro, definirErro] = useState<string | null>(null);
-  const [guardado, definirGuardado] = useState(false);
+  const [ficheiro, definirFicheiro] = useState<Ficheiro | null>(null);
+  const [destino, definirDestino] = useState<Destino | null>(null);
 
-  async function guardar() {
+  async function baixar(formato: api.FormatoDeExportacao) {
     definirErro(null);
-    definirABaixar(true);
+    definirDestino(null);
+    definirABaixar(formato);
     try {
-      const blob = await api.exportarLeads(filtros);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `fourlife-leads-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-      definirGuardado(true);
+      const f = await buscarFicheiro(
+        api.enderecoDaExportacao(formato, filtros),
+        `fourlife-leads.${formato}`,
+      );
+      definirFicheiro(f);
+      // Entrega logo: no telemóvel, o menu de partilha só abre enquanto o toque
+      // do botão ainda conta como gesto do utilizador.
+      try {
+        definirDestino(await guardarFicheiro(f));
+      } catch {
+        definirDestino(null);
+      }
     } catch (e) {
       definirErro(e instanceof Error ? e.message : String(e));
     } finally {
-      definirABaixar(false);
+      definirABaixar(null);
     }
   }
 
+  async function guardarOutraVez() {
+    if (!ficheiro) return;
+    try {
+      definirDestino(await guardarFicheiro(ficheiro));
+    } catch (e) {
+      definirErro(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  const vazio = quantos === 0;
+
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 sm:items-center sm:p-6"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 sm:items-center sm:p-6"
       onClick={aoFechar}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
+        className="flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-borda bg-cartao sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <header className="flex items-start justify-between gap-3 border-b border-borda px-4 py-3">
@@ -297,20 +323,74 @@ function Download({
 
         <div className="flex-1 overflow-y-auto p-4">{painelDeFiltros}</div>
 
-        <div className="border-t border-borda p-4">
+        <div className="border-t border-borda p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {erro && (
             <div className="mb-3">
               <Aviso tom="erro">Não foi possível baixar: {erro}</Aviso>
             </div>
           )}
+
+          {ficheiro && (
+            <div className="mb-3 flex flex-col gap-2 rounded-xl border border-borda bg-fundo p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 text-sm">
+                <p className="flex items-center gap-1.5 font-semibold">
+                  <I.Documento className="h-3.5 w-3.5 shrink-0 text-turquesa" />
+                  <span className="min-w-0 truncate">{ficheiro.nome}</span>
+                </p>
+                <p className="text-xs text-suave">
+                  {ficheiro.tamanho}
+                  {destino === "download" && " · guardado nos teus downloads"}
+                  {destino === "share" && " · entregue ao menu de partilha"}
+                  {destino === null && " · toca em guardar para escolher onde"}
+                </p>
+              </div>
+              <Botao variante="contorno" pequeno onClick={() => void guardarOutraVez()}>
+                <I.Descarregar className="h-4 w-4" />
+                {destino === null ? "Guardar ficheiro" : "Guardar outra vez"}
+              </Botao>
+            </div>
+          )}
+
           <p className="mb-2 text-sm">
             <b className="numero text-lg">{numero(quantos)}</b>{" "}
-            {quantos === 1 ? "empresa entra no ficheiro" : "empresas entram no ficheiro"}
+            <span className="text-suave">
+              {quantos === 1 ? "empresa entra no ficheiro" : "empresas entram no ficheiro"}
+            </span>
+            {activos > 0 && (
+              <button
+                type="button"
+                onClick={limparFiltros}
+                className="ml-3 text-xs text-suave underline hover:text-texto"
+              >
+                limpar filtros
+              </button>
+            )}
           </p>
-          <Botao onClick={guardar} disabled={aBaixar} className="w-full">
-            <I.Descarregar className="h-4 w-4" />
-            {aBaixar ? "A preparar a folha de cálculo…" : guardado ? "Guardar outra vez" : "Guardar ficheiro"}
-          </Botao>
+
+          {/* Dois formatos porque servem duas coisas: a folha é para trabalhar a
+              lista, o Word é o dossier que se leva impresso para a reunião. */}
+          <div className="grid grid-cols-2 gap-2">
+            <Botao
+              variante="contorno"
+              onClick={() => void baixar("csv")}
+              disabled={vazio || aBaixar !== null}
+            >
+              <I.Tabela className="h-4 w-4" />
+              CSV
+            </Botao>
+            <Botao onClick={() => void baixar("docx")} disabled={vazio || aBaixar !== null}>
+              <I.Documento className="h-4 w-4" />
+              Word
+            </Botao>
+          </div>
+
+          {aBaixar !== null && (
+            <p className="mt-2 text-xs text-suave">
+              {aBaixar === "docx"
+                ? `A montar o dossier de ${numero(quantos)} ${quantos === 1 ? "empresa" : "empresas"} em Word — pode levar alguns segundos.`
+                : "A preparar a folha de cálculo…"}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -373,7 +453,51 @@ export function Leads() {
   }, [lista.dados, procura, cidades, setores, tiers, contacto, site, scoreMin, naoContactados]);
 
   const nFiltros =
-    cidades.length + setores.length + tiers.length + contacto.length + (site ? 1 : 0) + (scoreMin ? 1 : 0);
+    cidades.length +
+    setores.length +
+    tiers.length +
+    contacto.length +
+    (site ? 1 : 0) +
+    (scoreMin ? 1 : 0) +
+    (periodo !== "all" ? 1 : 0) +
+    (naoContactados ? 1 : 0);
+
+  function limparFiltros() {
+    definirPeriodo("all");
+    definirCidades([]);
+    definirSetores([]);
+    definirTiers([]);
+    definirContacto([]);
+    definirSite("");
+    definirScoreMin(0);
+    definirNaoContactados(false);
+  }
+
+  /* A data a partir da qual o período deixa entrar os leads. O diálogo de
+     download tem de contar pelo mesmo critério do servidor, senão anuncia um
+     número e o ficheiro traz outro — e aí não se sabe qual está errado. */
+  const desde = useMemo(() => {
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    if (periodo === "today") return hoje;
+    if (periodo === "week") {
+      const diasDesdeSegunda = (hoje.getDay() + 6) % 7;
+      return new Date(hoje.getTime() - diasDesdeSegunda * 86_400_000);
+    }
+    if (periodo === "month") return new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    if (periodo === "since-last" && exportacao.dados?.at) return new Date(exportacao.dados.at);
+    return null;
+  }, [periodo, exportacao.dados?.at]);
+
+  /* O que entra mesmo no ficheiro: os filtros todos, mais o período, menos
+     quem pediu para não ser contactado — que o servidor nunca exporta. */
+  const paraOFicheiro = useMemo(
+    () =>
+      filtrados.filter(
+        (l) => !l.optOutAt && !(desde && l.createdAt && new Date(l.createdAt) < desde),
+      ).length,
+    [filtrados, desde],
+  );
 
   const painelDeFiltros = (
     <div className="rounded-2xl border border-borda bg-cartao p-4">
@@ -454,7 +578,14 @@ export function Leads() {
           className="w-full accent-turquesa"
         />
         <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
-          {([[0, "Qualquer score"], [60, "60 ou mais"], [80, "80 ou mais — só os mais quentes"]] as const).map(
+          {(
+            [
+              [0, "Qualquer score"],
+              [50, "50 ou mais"],
+              [65, "65 ou mais"],
+              [80, "80 ou mais — só os mais quentes"],
+            ] as const
+          ).map(
             ([v, nome]) => (
               <button
                 key={v}
@@ -474,15 +605,7 @@ export function Leads() {
           <Botao
             variante="contorno"
             pequeno
-            onClick={() => {
-              definirCidades([]);
-              definirSetores([]);
-              definirTiers([]);
-              definirContacto([]);
-              definirSite("");
-              definirScoreMin(0);
-              definirNaoContactados(false);
-            }}
+            onClick={limparFiltros}
           >
             Limpar filtros ({nFiltros})
           </Botao>
@@ -550,6 +673,7 @@ export function Leads() {
                         <p className="font-semibold leading-snug">{l.businessName}</p>
                         <p className="mt-0.5 text-xs text-suave">
                           {l.city} · {l.niche}
+                          {l.stage && l.stage !== "identified" && ` · ${l.stage}`}
                         </p>
                         <p className="mt-1 font-mono text-xs text-suave">
                           {l.whatsapp ?? l.phone ?? l.email ?? "sem contacto"}
@@ -560,6 +684,17 @@ export function Leads() {
                               {s.texto}
                             </Selo>
                           ))}
+                          {/* A hora do setor decide mais disparos do que a copy:
+                              ligar à pedreira às três da tarde é falar com ninguém. */}
+                          {janelaAberta(janelaDoSetor(l.niche)) && (
+                            <Selo tom="turquesa">boa hora agora</Selo>
+                          )}
+                          {l.googleRating !== null && (
+                            <Selo tom="neutro">
+                              ★ {l.googleRating}
+                              {l.googleReviewCount ? ` (${numero(l.googleReviewCount)})` : ""}
+                            </Selo>
+                          )}
                           {l.lastContactedAt ? (
                             <Selo tom="turquesa">falámos em {data(l.lastContactedAt)}</Selo>
                           ) : (
@@ -599,7 +734,9 @@ export function Leads() {
       {downloadAberto && (
         <Download
           filtros={filtros}
-          quantos={filtrados.length}
+          quantos={paraOFicheiro}
+          activos={nFiltros}
+          limparFiltros={limparFiltros}
           painelDeFiltros={painelDeFiltros}
           aoFechar={() => {
             definirDownloadAberto(false);
