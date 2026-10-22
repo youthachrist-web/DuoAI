@@ -6,6 +6,8 @@ const { generateB2CMessage } = require("./b2c");
 const { generateB2BMessage, parseLeadsInput } = require("./b2b");
 
 const PORT = process.env.PORT || 8787;
+// Fora do ar por omissão desde que o servidor caiu. Para voltar a abrir, FORA_DO_AR=0.
+const FORA_DO_AR = process.env.FORA_DO_AR !== "0";
 // server/webapp is a copy of the repo-root webapp/, kept in sync manually —
 // needed so this resolves correctly even when only `server/` is the deploy
 // build context (e.g. Railway with rootDirectory=server).
@@ -89,6 +91,20 @@ const server = http.createServer(async (req, res) => {
         uptimeSeconds: Math.round(process.uptime()),
         time: new Date().toISOString(),
       });
+    }
+
+    if (FORA_DO_AR) {
+      if (route.startsWith("/api")) {
+        return sendJSON(res, 503, { error: "sistema fora do ar: o servidor caiu" });
+      }
+      res.writeHead(503, { "Content-Type": "text/html; charset=utf-8", "Retry-After": "3600" });
+      return res.end(
+        '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width,initial-scale=1"><title>DuoAI · Fora do ar</title></head>' +
+          '<body style="font-family:system-ui,sans-serif;padding:24px">' +
+          "<h1>Sistema fora do ar</h1><p>O servidor caiu e o sistema está off-line. Voltamos assim que estiver resolvido.</p>" +
+          "</body></html>",
+      );
     }
 
     if (req.method === "POST" && route === "/api/b2c/generate") {

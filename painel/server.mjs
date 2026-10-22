@@ -22,6 +22,9 @@ const PORTA = Number(process.env.PORT ?? 8080);
 const API = (process.env.API_PROXY_TARGET ?? "").replace(/\/$/, "");
 const SENHA = process.env.PAINEL_SENHA ?? "";
 const CHAVE = process.env.PAINEL_CHAVE ?? "";
+// Fora do ar por omissão desde que o servidor caiu: ninguém entra, nem com senha
+// nem com chave, e a API não recebe nada. Para voltar a abrir, FORA_DO_AR=0.
+const FORA_DO_AR = process.env.FORA_DO_AR !== "0";
 const RAIZ = join(import.meta.dirname, "dist");
 
 const COOKIE = "painel_sessao";
@@ -110,6 +113,28 @@ const PAGINA_ENTRADA = (erro) => `<!doctype html>
   <button type="submit">Entrar</button>
 </form></body></html>`;
 
+const PAGINA_FORA_DO_AR = `<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DuoAI · Fora do ar</title>
+<style>
+  :root { color-scheme: light dark; --fundo:#F6F7F9; --cartao:#fff; --borda:#E3E6EB; --texto:#14181F; --suave:#667085; --aviso:#B42318; }
+  @media (prefers-color-scheme: dark) { :root { --fundo:#0D1117; --cartao:#161B22; --borda:#2A313C; --texto:#E6EDF3; --suave:#9198A1; --aviso:#F97066; } }
+  body { margin:0; min-height:100dvh; display:grid; place-items:center; padding:24px;
+         background:var(--fundo); color:var(--texto);
+         font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { width:100%; max-width:360px; box-sizing:border-box; background:var(--cartao); border:1px solid var(--borda);
+         border-radius:14px; padding:24px; display:grid; gap:12px; }
+  h1 { margin:0; font-size:17px; }
+  .estado { margin:0; font-size:13px; font-weight:600; color:var(--aviso); }
+  p { margin:0; font-size:13px; color:var(--suave); line-height:1.5; }
+</style></head>
+<body><main>
+  <h1>DuoAI · FourLife</h1>
+  <p class="estado">Sistema fora do ar</p>
+  <p>O servidor caiu e o sistema está off-line. Voltamos assim que estiver resolvido.</p>
+</main></body></html>`;
+
 /* ------------------------------------------------------------- o proxy */
 
 async function encaminhar(req, res) {
@@ -164,6 +189,18 @@ createServer(async (req, res) => {
   // este ficheiro só apaga caches e se desregista.
   if (caminhoPedido === "/sw.js") {
     return servir(res, join(RAIZ, "sw.js"), "no-cache");
+  }
+
+  // Fora do ar fecha tudo o resto antes da senha: nem o painel nem a API, e
+  // nem a chave dos scripts abre.
+  if (FORA_DO_AR) {
+    const cabecalhos = { "cache-control": "no-store", "retry-after": "3600" };
+    if (caminhoPedido.startsWith("/api")) {
+      res.writeHead(503, { ...cabecalhos, "content-type": "application/json" });
+      return res.end(JSON.stringify({ error: "sistema fora do ar: o servidor caiu" }));
+    }
+    res.writeHead(503, { ...cabecalhos, "content-type": TIPOS[".html"] });
+    return res.end(PAGINA_FORA_DO_AR);
   }
 
   const cookies = lerCookies(req.headers.cookie);
@@ -228,5 +265,5 @@ createServer(async (req, res) => {
 
   return servir(res, join(RAIZ, "index.html"), "no-cache");
 }).listen(PORTA, () => {
-  console.log(`painel em :${PORTA} — API em ${API || "(por definir)"} — senha ${SENHA ? "activa" : "DESLIGADA"}`);
+  console.log(`painel em :${PORTA} — API em ${API || "(por definir)"} — senha ${SENHA ? "activa" : "DESLIGADA"}${FORA_DO_AR ? " — FORA DO AR" : ""}`);
 });
