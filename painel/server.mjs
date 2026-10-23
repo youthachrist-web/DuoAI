@@ -22,7 +22,7 @@ const PORTA = Number(process.env.PORT ?? 8080);
 const API = (process.env.API_PROXY_TARGET ?? "").replace(/\/$/, "");
 const SENHA = process.env.PAINEL_SENHA ?? "";
 const CHAVE = process.env.PAINEL_CHAVE ?? "";
-// Fora do ar por omissão desde que o servidor caiu: ninguém entra, nem com senha
+// Fora do ar (em manutenção) por omissão: ninguém entra, nem com senha
 // nem com chave, e a API não recebe nada. Para voltar a abrir, FORA_DO_AR=0.
 const FORA_DO_AR = process.env.FORA_DO_AR !== "0";
 const RAIZ = join(import.meta.dirname, "dist");
@@ -116,7 +116,7 @@ const PAGINA_ENTRADA = (erro) => `<!doctype html>
 const PAGINA_FORA_DO_AR = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DuoAI · Fora do ar</title>
+<title>DuoAI · Em manutenção</title>
 <style>
   :root { color-scheme: light dark; --fundo:#F6F7F9; --cartao:#fff; --borda:#E3E6EB; --texto:#14181F; --suave:#667085; --aviso:#B42318; }
   @media (prefers-color-scheme: dark) { :root { --fundo:#0D1117; --cartao:#161B22; --borda:#2A313C; --texto:#E6EDF3; --suave:#9198A1; --aviso:#F97066; } }
@@ -131,8 +131,8 @@ const PAGINA_FORA_DO_AR = `<!doctype html>
 </style></head>
 <body><main>
   <h1>DuoAI · FourLife</h1>
-  <p class="estado">Sistema fora do ar</p>
-  <p>O servidor caiu e o sistema está off-line. Voltamos assim que estiver resolvido.</p>
+  <p class="estado">Em manutenção</p>
+  <p>O sistema está em manutenção e volta em breve.</p>
 </main></body></html>`;
 
 /* ------------------------------------------------------------- o proxy */
@@ -197,7 +197,7 @@ createServer(async (req, res) => {
     const cabecalhos = { "cache-control": "no-store", "retry-after": "3600" };
     if (caminhoPedido.startsWith("/api")) {
       res.writeHead(503, { ...cabecalhos, "content-type": "application/json" });
-      return res.end(JSON.stringify({ error: "sistema fora do ar: o servidor caiu" }));
+      return res.end(JSON.stringify({ error: "sistema em manutenção" }));
     }
     res.writeHead(503, { ...cabecalhos, "content-type": TIPOS[".html"] });
     return res.end(PAGINA_FORA_DO_AR);
